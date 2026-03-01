@@ -2,7 +2,7 @@ import { mountFooter } from '/src/components/footer/footer.js';
 import { mountHeader } from '/src/components/header/header.js';
 import { requireSupabase } from '/src/lib/supabaseClient.js';
 
-mountHeader('#app-header', '/register');
+mountHeader('#app-header');
 mountFooter('#app-footer');
 
 const form = document.querySelector('#register-form');

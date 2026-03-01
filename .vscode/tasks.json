@@ -19,6 +19,26 @@
 				"build"
 			],
 			"isBackground": false
+		},
+		{
+			"label": "vite-build-router-check",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"build"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "vite-build-navbar-update",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"build"
+			],
+			"isBackground": false
 		}
 	]
 }

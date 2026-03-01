@@ -2,7 +2,7 @@ import { mountFooter } from '/src/components/footer/footer.js';
 import { mountHeader } from '/src/components/header/header.js';
 import { requireSupabase } from '/src/lib/supabaseClient.js';
 
-mountHeader('#app-header', '/admin');
+mountHeader('#app-header');
 mountFooter('#app-footer');
 
 const status = document.querySelector('#admin-status');

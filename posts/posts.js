@@ -1,8 +1,9 @@
 import { mountFooter } from '/src/components/footer/footer.js';
 import { mountHeader } from '/src/components/header/header.js';
 import { addFavorite } from '/src/lib/favorites.js';
+import { getPostIdFromRoute } from '/src/router/router.js';
 
-mountHeader('#app-header', '/posts');
+mountHeader('#app-header');
 mountFooter('#app-footer');
 
 const demoPostMap = {
@@ -20,16 +21,7 @@ const demoPostMap = {
   }
 };
 
-function getPostIdFromLocation() {
-  const pathSegments = window.location.pathname.split('/').filter(Boolean);
-  if (pathSegments[0] === 'posts' && pathSegments[1]) {
-    return decodeURIComponent(pathSegments[1]);
-  }
-
-  return new URLSearchParams(window.location.search).get('id') || '1';
-}
-
-const postId = getPostIdFromLocation();
+const postId = getPostIdFromRoute('1');
 const post = demoPostMap[postId] || {
   title: `Post ${postId}`,
   content: 'Post content is not available yet. You can connect this route to your backend table.'

@@ -1,5 +1,6 @@
 import { mountFooter } from '/src/components/footer/footer.js';
 import { mountHeader } from '/src/components/header/header.js';
+import { toPostRoute } from '/src/router/router.js';
 
 const featuredPosts = [
   { id: 1, title: 'Tokyo in 48 Hours', excerpt: 'A compact guide to food, transit, and culture.' },
@@ -7,7 +8,7 @@ const featuredPosts = [
   { id: 3, title: 'Bali Sunrise Spots', excerpt: 'Top sunrise views across Ubud and nearby peaks.' }
 ];
 
-mountHeader('#app-header', '/');
+mountHeader('#app-header');
 mountFooter('#app-footer');
 
 const postsContainer = document.querySelector('#featured-posts');
@@ -20,7 +21,7 @@ postsContainer.innerHTML = featuredPosts
             <h2 class="h5 card-title">${post.title}</h2>
             <p class="card-text text-body-secondary">${post.excerpt}</p>
             <div class="mt-auto d-flex gap-2">
-              <a class="btn btn-primary btn-sm" href="/posts/${post.id}">Read Post</a>
+              <a class="btn btn-primary btn-sm" href="${toPostRoute(post.id)}">Read Post</a>
               <a class="btn btn-outline-secondary btn-sm" href="/favorites">Favorites</a>
             </div>
           </div>
