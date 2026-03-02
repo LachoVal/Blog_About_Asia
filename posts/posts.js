@@ -2,6 +2,7 @@ import { mountFooter } from '/src/components/footer/footer.js';
 import { mountHeader } from '/src/components/header/header.js';
 import { getPostIdFromRoute } from '/src/router/router.js';
 import { requireSupabase } from '/src/lib/supabaseClient.js';
+import { Modal } from 'bootstrap';
 
 mountHeader('#app-header');
 mountFooter('#app-footer');
@@ -33,6 +34,11 @@ const commentFormMessage = document.querySelector('#comment-form-message');
 const commentsLoading = document.querySelector('#comments-loading');
 const commentsEmpty = document.querySelector('#comments-empty');
 const commentsList = document.querySelector('#comments-list');
+const editCommentModalElement = document.querySelector('#editCommentModal');
+const editCommentIdInput = document.querySelector('#edit-comment-id');
+const editCommentTextArea = document.querySelector('#edit-comment-text');
+const editCommentSaveButton = document.querySelector('#edit-comment-save');
+const editCommentMessage = document.querySelector('#edit-comment-message');
 
 const state = {
   supabase: null,
@@ -42,7 +48,8 @@ const state = {
   currentProfile: null,
   isAdmin: false,
   favoriteId: null,
-  comments: []
+  comments: [],
+  editCommentModalInstance: null
 };
 
 function canonicalizePostUrlIfNeeded() {
@@ -90,6 +97,24 @@ function setTextMessage(target, message, variant = 'secondary') {
 function clearTextMessage(target) {
   target.className = 'small mt-2 mb-0';
   target.textContent = '';
+}
+
+function setEditModalMessage(message, variant = 'secondary') {
+  if (!editCommentMessage) {
+    return;
+  }
+
+  editCommentMessage.className = `small mt-2 mb-0 text-${variant}`;
+  editCommentMessage.textContent = message;
+}
+
+function clearEditModalMessage() {
+  if (!editCommentMessage) {
+    return;
+  }
+
+  editCommentMessage.className = 'small mt-2 mb-0';
+  editCommentMessage.textContent = '';
 }
 
 function formatPublishedDate(value) {
@@ -284,6 +309,7 @@ function canManageComment(comment) {
 function createCommentElement(comment) {
   const card = document.createElement('article');
   card.className = 'card border-0 shadow-sm';
+  card.dataset.commentId = String(comment.id);
 
   const body = document.createElement('div');
   body.className = 'card-body';
@@ -319,14 +345,18 @@ function createCommentElement(comment) {
 
     const editButton = document.createElement('button');
     editButton.type = 'button';
-    editButton.className = 'btn btn-sm btn-outline-secondary';
-    editButton.textContent = 'Edit';
-    editButton.addEventListener('click', () => handleEditComment(comment));
+    editButton.className = 'btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1';
+    editButton.setAttribute('aria-label', 'Edit comment');
+    editButton.title = 'Edit comment';
+    editButton.innerHTML = '<span aria-hidden="true">✏️</span><span>Edit</span>';
+    editButton.addEventListener('click', () => openEditModal(comment.id, comment.content));
 
     const deleteButton = document.createElement('button');
     deleteButton.type = 'button';
-    deleteButton.className = 'btn btn-sm btn-outline-danger';
-    deleteButton.textContent = 'Delete';
+    deleteButton.className = 'btn btn-sm btn-outline-danger d-inline-flex align-items-center gap-1';
+    deleteButton.setAttribute('aria-label', 'Delete comment');
+    deleteButton.title = 'Delete comment';
+    deleteButton.innerHTML = '<span aria-hidden="true">🗑️</span><span>Delete</span>';
     deleteButton.addEventListener('click', () => handleDeleteComment(comment));
 
     actions.append(editButton, deleteButton);
@@ -336,6 +366,7 @@ function createCommentElement(comment) {
   const text = document.createElement('p');
   text.className = 'mb-0';
   text.textContent = comment.content;
+  text.dataset.role = 'comment-content';
 
   body.append(top, text);
   card.appendChild(body);
@@ -412,31 +443,84 @@ async function handleAddComment(event) {
 }
 
 async function handleEditComment(comment) {
-  if (!canManageComment(comment)) {
+  openEditModal(comment.id, comment.content);
+}
+
+function openEditModal(commentId, currentText) {
+  const comment = state.comments.find((item) => String(item.id) === String(commentId));
+  if (!comment || !canManageComment(comment)) {
     showGlobalAlert('You are not allowed to edit this comment.', 'warning');
     return;
   }
 
-  const nextContent = window.prompt('Edit your comment:', comment.content);
-  if (nextContent === null) {
+  if (!editCommentModalElement) {
+    showGlobalAlert('Edit modal is unavailable on this page.', 'danger');
     return;
   }
 
-  const trimmed = nextContent.trim();
-  if (!trimmed) {
-    showGlobalAlert('Comment cannot be empty.', 'warning');
+  editCommentIdInput.value = String(commentId);
+  editCommentTextArea.value = currentText || '';
+  clearEditModalMessage();
+
+  state.editCommentModalInstance = new Modal(editCommentModalElement);
+  state.editCommentModalInstance.show();
+  editCommentTextArea.focus();
+}
+
+function updateCommentTextInDOM(commentId, newText) {
+  const commentCard = commentsList.querySelector(`[data-comment-id="${String(commentId)}"]`);
+  if (!commentCard) {
     return;
   }
 
-  hideGlobalAlert();
+  const commentTextNode = commentCard.querySelector('[data-role="comment-content"]');
+  if (!commentTextNode) {
+    return;
+  }
 
-  const { error } = await state.supabase.from('comments').update({ content: trimmed }).eq('id', comment.id);
+  commentTextNode.textContent = newText;
+}
+
+async function handleSaveEditedComment() {
+  const commentId = editCommentIdInput.value;
+  const newText = editCommentTextArea.value.trim();
+
+  if (!commentId) {
+    setEditModalMessage('No comment selected for editing.', 'warning');
+    return;
+  }
+
+  if (!newText) {
+    setEditModalMessage('Comment cannot be empty.', 'warning');
+    return;
+  }
+
+  editCommentSaveButton.disabled = true;
+  clearEditModalMessage();
+
+  const { error } = await state.supabase.from('comments').update({ content: newText }).eq('id', commentId);
+
+  editCommentSaveButton.disabled = false;
+
   if (error) {
-    showGlobalAlert(error.message, 'danger');
+    setEditModalMessage(error.message, 'danger');
     return;
   }
 
-  await fetchComments();
+  state.comments = state.comments.map((comment) => {
+    if (String(comment.id) !== String(commentId)) {
+      return comment;
+    }
+
+    return {
+      ...comment,
+      content: newText
+    };
+  });
+
+  updateCommentTextInDOM(commentId, newText);
+  clearEditModalMessage();
+  state.editCommentModalInstance?.hide();
 }
 
 async function handleDeleteComment(comment) {
@@ -516,5 +600,6 @@ async function init() {
 
 favoriteButton.addEventListener('click', toggleFavorite);
 commentForm.addEventListener('submit', handleAddComment);
+editCommentSaveButton?.addEventListener('click', handleSaveEditedComment);
 
 init();
