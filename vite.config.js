@@ -91,6 +91,7 @@ export default defineConfig({
         login: resolve(__dirname, 'login/index.html'),
         register: resolve(__dirname, 'register/index.html'),
         admin: resolve(__dirname, 'admin/index.html'),
+        myPosts: resolve(__dirname, 'my-posts.html'),
         posts: resolve(__dirname, 'posts/index.html'),
         createPost: resolve(__dirname, 'create-post/index.html'),
         favorites: resolve(__dirname, 'favorites/index.html')
