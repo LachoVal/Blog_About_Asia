@@ -9,23 +9,30 @@
   <body>
     <div id="app-header"></div>
 
-    <main class="container py-5">
-      <h1 class="mb-4">Login</h1>
-      <form id="login-form" class="row g-3 col-12 col-md-8 col-lg-6">
-        <div class="col-12">
-          <label for="email" class="form-label">Email</label>
-          <input id="email" name="email" type="email" class="form-control" required />
-        </div>
-        <div class="col-12">
-          <label for="password" class="form-label">Password</label>
-          <input id="password" name="password" type="password" class="form-control" required />
-        </div>
-        <div class="col-12 d-flex gap-2">
-          <button class="btn btn-primary" type="submit">Sign In</button>
-          <a class="btn btn-outline-secondary" href="/register">Create account</a>
-        </div>
-      </form>
-      <p id="login-message" class="mt-3 mb-0"></p>
+    <main class="auth-page py-4 py-md-5">
+      <div class="container auth-window d-flex align-items-center justify-content-center">
+        <section class="auth-card p-4 p-md-5 shadow-sm">
+          <h1 class="auth-title mb-2 text-center">Welcome Back</h1>
+          <p class="auth-subtitle text-body-secondary text-center mb-4">Sign in to continue exploring Asia travel stories.</p>
+
+          <form id="login-form" class="row g-3">
+            <div class="col-12">
+              <label for="email" class="form-label">Email</label>
+              <input id="email" name="email" type="email" class="form-control form-control-lg" autocomplete="email" required />
+            </div>
+            <div class="col-12">
+              <label for="password" class="form-label">Password</label>
+              <input id="password" name="password" type="password" class="form-control form-control-lg" autocomplete="current-password" required />
+            </div>
+            <div class="col-12 d-grid gap-2 mt-2">
+              <button class="btn btn-primary btn-lg" type="submit">Sign In</button>
+              <a class="btn btn-outline-secondary" href="/register/index.html">Create account</a>
+            </div>
+          </form>
+
+          <p id="login-message" class="mt-3 mb-0 text-center"></p>
+        </section>
+      </div>
     </main>
 
     <div id="app-footer"></div>

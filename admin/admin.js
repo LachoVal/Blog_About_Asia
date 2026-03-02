@@ -6,6 +6,21 @@ mountHeader('#app-header');
 mountFooter('#app-footer');
 
 const status = document.querySelector('#admin-status');
-status.textContent = requireSupabase()
-  ? 'Supabase is connected. You can extend this page with admin-only data views.'
-  : 'Supabase is not configured yet. Add credentials to your .env file to enable admin data operations.';
+
+async function protectAdminPage() {
+  const supabase = requireSupabase();
+  if (!supabase) {
+    window.location.replace('/login/index.html');
+    return;
+  }
+
+  const { data } = await supabase.auth.getSession();
+  if (!data?.session) {
+    window.location.replace('/login/index.html');
+    return;
+  }
+
+  status.textContent = 'Authenticated. You can extend this page with admin-only data views.';
+}
+
+protectAdminPage();

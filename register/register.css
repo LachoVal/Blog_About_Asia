@@ -1,3 +1,31 @@
-main {
+.auth-page {
+  background: linear-gradient(165deg, var(--bs-light) 0%, var(--bs-body-bg) 55%, var(--bs-secondary-bg) 100%);
+}
+
+.auth-window {
   min-height: calc(100vh - 140px);
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 520px;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 1rem;
+  background-color: var(--bs-body-bg);
+}
+
+.auth-title {
+  font-weight: 700;
+}
+
+.auth-subtitle {
+  font-size: 0.95rem;
+}
+
+.auth-card .form-control {
+  border-radius: 0.75rem;
+}
+
+.auth-card .btn {
+  border-radius: 0.75rem;
 }

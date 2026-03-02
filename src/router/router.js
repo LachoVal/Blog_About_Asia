@@ -9,8 +9,12 @@ export const ROUTES = {
 };
 
 function normalizePathname(pathname) {
-  if (!pathname || pathname === '/') {
+  if (!pathname || pathname === '/' || pathname === '/index.html') {
     return '/';
+  }
+
+  if (pathname.endsWith('/index.html')) {
+    pathname = pathname.slice(0, -'/index.html'.length);
   }
 
   return pathname.endsWith('/') ? pathname.slice(0, -1) : pathname;

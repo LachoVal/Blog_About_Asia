@@ -8,6 +8,20 @@ mountFooter('#app-footer');
 const form = document.querySelector('#login-form');
 const message = document.querySelector('#login-message');
 
+async function redirectIfAuthenticated() {
+  const supabase = requireSupabase();
+  if (!supabase) {
+    return;
+  }
+
+  const { data } = await supabase.auth.getSession();
+  if (data?.session) {
+    window.location.replace('/');
+  }
+}
+
+redirectIfAuthenticated();
+
 form.addEventListener('submit', async (event) => {
   event.preventDefault();
   message.className = 'mt-3 mb-0 text-body-secondary';
@@ -15,12 +29,18 @@ form.addEventListener('submit', async (event) => {
 
   const supabase = requireSupabase();
   const formData = new FormData(form);
-  const email = String(formData.get('email') || '');
+  const email = String(formData.get('email') || '').trim();
   const password = String(formData.get('password') || '');
 
   if (!supabase) {
     message.className = 'mt-3 mb-0 text-warning';
     message.textContent = 'Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env.';
+    return;
+  }
+
+  if (!email || !password) {
+    message.className = 'mt-3 mb-0 text-warning';
+    message.textContent = 'Please provide both email and password.';
     return;
   }
 
@@ -32,5 +52,6 @@ form.addEventListener('submit', async (event) => {
   }
 
   message.className = 'mt-3 mb-0 text-success';
-  message.textContent = 'Login successful.';
+  message.textContent = 'Login successful. Redirecting...';
+  window.location.assign('/');
 });

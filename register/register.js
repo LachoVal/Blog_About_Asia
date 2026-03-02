@@ -8,6 +8,20 @@ mountFooter('#app-footer');
 const form = document.querySelector('#register-form');
 const message = document.querySelector('#register-message');
 
+async function redirectIfAuthenticated() {
+  const supabase = requireSupabase();
+  if (!supabase) {
+    return;
+  }
+
+  const { data } = await supabase.auth.getSession();
+  if (data?.session) {
+    window.location.replace('/');
+  }
+}
+
+redirectIfAuthenticated();
+
 form.addEventListener('submit', async (event) => {
   event.preventDefault();
   message.className = 'mt-3 mb-0 text-body-secondary';
@@ -15,7 +29,8 @@ form.addEventListener('submit', async (event) => {
 
   const supabase = requireSupabase();
   const formData = new FormData(form);
-  const email = String(formData.get('email') || '');
+  const name = String(formData.get('name') || '').trim();
+  const email = String(formData.get('email') || '').trim();
   const password = String(formData.get('password') || '');
 
   if (!supabase) {
@@ -24,13 +39,38 @@ form.addEventListener('submit', async (event) => {
     return;
   }
 
-  const { error } = await supabase.auth.signUp({ email, password });
+  if (!name || !email || !password) {
+    message.className = 'mt-3 mb-0 text-warning';
+    message.textContent = 'Please provide name, email, and password.';
+    return;
+  }
+
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: {
+        name
+      },
+      emailRedirectTo: `${window.location.origin}/login/index.html`
+    }
+  });
+
   if (error) {
     message.className = 'mt-3 mb-0 text-danger';
     message.textContent = error.message;
     return;
   }
 
+  form.reset();
+
+  if (data?.session) {
+    message.className = 'mt-3 mb-0 text-success';
+    message.textContent = 'Registration successful. Redirecting...';
+    window.location.assign('/');
+    return;
+  }
+
   message.className = 'mt-3 mb-0 text-success';
-  message.textContent = 'Registration successful. Check your inbox if email confirmation is enabled.';
+  message.textContent = 'Registration successful. Check your inbox to confirm your email, then log in.';
 });

@@ -17,11 +17,37 @@ function rewritePostsIdPath(urlValue) {
   return `/posts/index.html?id=${postId}${suffix}`;
 }
 
+function rewriteAuthPath(urlValue) {
+  if (!urlValue) {
+    return null;
+  }
+
+  const url = new URL(urlValue, 'http://localhost');
+  const suffix = url.search || '';
+
+  if (url.pathname === '/login' || url.pathname === '/login/') {
+    return `/login/index.html${suffix}`;
+  }
+
+  if (url.pathname === '/register' || url.pathname === '/register/') {
+    return `/register/index.html${suffix}`;
+  }
+
+  return null;
+}
+
 function postsIdRoutePlugin() {
   return {
     name: 'posts-id-route-plugin',
     configureServer(server) {
       server.middlewares.use((req, _res, next) => {
+        const authRewritten = rewriteAuthPath(req.url);
+        if (authRewritten) {
+          req.url = authRewritten;
+          next();
+          return;
+        }
+
         const rewritten = rewritePostsIdPath(req.url);
         if (rewritten) {
           req.url = rewritten;
@@ -32,6 +58,13 @@ function postsIdRoutePlugin() {
     },
     configurePreviewServer(server) {
       server.middlewares.use((req, _res, next) => {
+        const authRewritten = rewriteAuthPath(req.url);
+        if (authRewritten) {
+          req.url = authRewritten;
+          next();
+          return;
+        }
+
         const rewritten = rewritePostsIdPath(req.url);
         if (rewritten) {
           req.url = rewritten;
