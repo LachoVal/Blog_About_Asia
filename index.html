@@ -9,24 +9,53 @@
   <body>
     <div id="app-header"></div>
 
-    <main class="container py-5">
-      <section class="row justify-content-center">
-        <article class="col-12 col-lg-9">
-          <div class="p-4 p-md-5 border rounded-3 bg-body-tertiary">
-            <h1 class="mb-3">Welcome to Asian Travel Blog</h1>
-            <p class="lead mb-3">
-              This app helps you explore travel stories, destination ideas, and cultural highlights from around Asia.
+    <main class="pb-5">
+      <section class="hero-section text-white d-flex align-items-center mb-5">
+        <div class="container py-5">
+          <div class="col-12 col-lg-8">
+            <h1 class="display-5 fw-bold mb-3">Discover the Wonders of Asia</h1>
+            <p class="lead mb-4">
+              Explore authentic travel stories, hidden gems, and cultural highlights from destinations across Asia.
             </p>
-            <p class="mb-4">
-              Browse posts from different countries, save your favorites, and discover your next trip inspiration.
-            </p>
-            <p class="h5 mb-4">Please, login/register</p>
-            <div class="d-flex flex-wrap gap-2">
-              <a class="btn btn-primary" href="/login">Login</a>
-              <a class="btn btn-outline-secondary" href="/register">Register</a>
-            </div>
+            <a class="btn btn-warning btn-lg" href="/create-post">Create a New Post</a>
           </div>
-        </article>
+        </div>
+      </section>
+
+      <section class="container mb-5" aria-labelledby="featured-posts-title">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h2 id="featured-posts-title" class="h3 mb-0">Featured Posts</h2>
+        </div>
+
+        <div id="featured-loading" class="alert alert-secondary mb-3" role="status">Loading featured posts...</div>
+        <div id="featured-empty" class="alert alert-light border d-none mb-3">No featured posts available yet.</div>
+
+        <div id="featured-carousel-wrapper" class="d-none">
+          <div id="featured-carousel" class="carousel slide rounded-4 overflow-hidden" data-bs-ride="carousel">
+            <div id="featured-carousel-indicators" class="carousel-indicators"></div>
+            <div id="featured-carousel-inner" class="carousel-inner"></div>
+            <button class="carousel-control-prev" type="button" data-bs-target="#featured-carousel" data-bs-slide="prev">
+              <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+              <span class="visually-hidden">Previous</span>
+            </button>
+            <button class="carousel-control-next" type="button" data-bs-target="#featured-carousel" data-bs-slide="next">
+              <span class="carousel-control-next-icon" aria-hidden="true"></span>
+              <span class="visually-hidden">Next</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section class="container" aria-labelledby="country-posts-title">
+        <h2 id="country-posts-title" class="h3 mb-3">Posts by Country</h2>
+
+        <div id="country-tabs-loading" class="alert alert-secondary mb-3" role="status">Loading countries...</div>
+        <ul id="country-tabs" class="nav nav-tabs mb-4" role="tablist"></ul>
+
+        <div id="posts-loading" class="alert alert-secondary mb-3" role="status">Loading posts...</div>
+        <div id="posts-empty" class="alert alert-light border d-none">No approved posts found for this country.</div>
+
+        <div id="posts-grid" class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4"></div>
       </section>
     </main>
 
