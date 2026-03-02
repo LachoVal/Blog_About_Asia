@@ -17,7 +17,7 @@
             <p class="lead mb-4">
               Explore authentic travel stories, hidden gems, and cultural highlights from destinations across Asia.
             </p>
-            <a class="btn btn-warning btn-lg" href="/create-post">Create a New Post</a>
+            <a id="hero-see-posts-button" class="btn btn-warning btn-lg" href="#country-posts-title">See the posts</a>
           </div>
         </div>
       </section>
@@ -49,13 +49,19 @@
       <section class="container" aria-labelledby="country-posts-title">
         <h2 id="country-posts-title" class="h3 mb-3">Posts by Country</h2>
 
-        <div id="country-tabs-loading" class="alert alert-secondary mb-3" role="status">Loading countries...</div>
-        <ul id="country-tabs" class="nav nav-tabs mb-4" role="tablist"></ul>
+        <div class="input-group mb-4">
+          <span class="input-group-text"><i class="bi bi-search"></i></span>
+          <input
+            type="text"
+            id="countrySearch"
+            class="form-control form-control-lg"
+            placeholder="Search posts by country name (e.g., Japan, Thailand)..."
+          />
+        </div>
 
         <div id="posts-loading" class="alert alert-secondary mb-3" role="status">Loading posts...</div>
-        <div id="posts-empty" class="alert alert-light border d-none">No approved posts found for this country.</div>
 
-        <div id="posts-grid" class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4"></div>
+        <div id="postsContainer" class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4"></div>
       </section>
     </main>
 

@@ -16,6 +16,7 @@ const postEditorForm = document.querySelector('#post-editor-form');
 const editorPostId = document.querySelector('#editor-post-id');
 const editorPostTitle = document.querySelector('#editor-post-title');
 const editorPostContent = document.querySelector('#editor-post-content');
+const editorPostCountry = document.querySelector('#editor-post-country');
 const editorPostPhoto = document.querySelector('#editor-post-photo');
 const postEditorSubmit = document.querySelector('#post-editor-submit');
 const postEditorMessage = document.querySelector('#post-editor-message');
@@ -24,9 +25,9 @@ const state = {
   supabase: null,
   currentUser: null,
   posts: [],
+  countries: [],
   editorMode: 'create',
-  editorModal: null,
-  fallbackCountryId: null
+  editorModal: null
 };
 
 function showMessage(text, variant = 'info') {
@@ -54,6 +55,7 @@ function resetEditorForm() {
   editorPostId.value = '';
   editorPostTitle.value = '';
   editorPostContent.value = '';
+  editorPostCountry.value = '';
   editorPostPhoto.value = '';
   clearEditorMessage();
 }
@@ -75,7 +77,7 @@ async function openEditModal(postId) {
   setEditorMessage('Loading post...', 'secondary');
   const { data, error } = await state.supabase
     .from('posts')
-    .select('id, title, content')
+    .select('id, title, content, country_id')
     .eq('id', postId)
     .eq('author_id', state.currentUser.id)
     .maybeSingle();
@@ -88,8 +90,24 @@ async function openEditModal(postId) {
   editorPostId.value = data.id;
   editorPostTitle.value = data.title || '';
   editorPostContent.value = data.content || '';
+  editorPostCountry.value = data.country_id ? String(data.country_id) : '';
   clearEditorMessage();
   state.editorModal.show();
+}
+
+function populateCountryOptions(countries) {
+  if (!editorPostCountry) {
+    return;
+  }
+
+  editorPostCountry.innerHTML = '<option value="">Select a country</option>';
+
+  countries.forEach((country) => {
+    const option = document.createElement('option');
+    option.value = country.id;
+    option.textContent = country.name;
+    editorPostCountry.appendChild(option);
+  });
 }
 
 function fileToDataUrl(file) {
@@ -201,14 +219,14 @@ async function fetchMyPosts() {
   renderPostsTable(state.posts);
 }
 
-async function loadFallbackCountryId() {
-  const { data, error } = await state.supabase.from('countries').select('id').limit(1);
+async function loadCountries() {
+  const { data, error } = await state.supabase.from('countries').select('id, name').order('name', { ascending: true });
   if (error) {
-    state.fallbackCountryId = null;
-    return;
+    throw new Error(error.message);
   }
 
-  state.fallbackCountryId = data?.[0]?.id || null;
+  state.countries = data || [];
+  populateCountryOptions(state.countries);
 }
 
 function removeRowFromDom(postId) {
@@ -244,10 +262,16 @@ async function handleEditorSubmit(event) {
 
   const title = editorPostTitle.value.trim();
   const content = editorPostContent.value.trim();
+  const selectedCountryId = editorPostCountry.value;
   const selectedFile = editorPostPhoto.files?.[0] || null;
 
   if (!title || !content) {
     setEditorMessage('Title and content are required.', 'danger');
+    return;
+  }
+
+  if (!selectedCountryId) {
+    setEditorMessage('Please select a country.', 'danger');
     return;
   }
 
@@ -275,7 +299,8 @@ async function handleEditorSubmit(event) {
 
     const updatePayload = {
       title,
-      content
+      content,
+      country_id: selectedCountryId
     };
 
     if (imageUrl) {
@@ -304,15 +329,12 @@ async function handleEditorSubmit(event) {
   const insertPayload = {
     title,
     content,
+    country_id: selectedCountryId,
     author_id: state.currentUser.id
   };
 
   if (imageUrl) {
     insertPayload.image_url = imageUrl;
-  }
-
-  if (state.fallbackCountryId) {
-    insertPayload.country_id = state.fallbackCountryId;
   }
 
   const { error } = await state.supabase.from('posts').insert(insertPayload);
@@ -373,7 +395,7 @@ async function init() {
   state.editorModal = new Modal(postEditorModalElement);
 
   try {
-    await loadFallbackCountryId();
+    await loadCountries();
     await fetchMyPosts();
   } catch (error) {
     showMessage(error instanceof Error ? error.message : 'Unable to load posts.', 'danger');

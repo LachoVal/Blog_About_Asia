@@ -20,11 +20,33 @@ async function syncAuthNav(target) {
   const supabase = requireSupabase();
   if (!supabase) {
     toggleAuthNav(target, false);
+    target.querySelectorAll('[data-auth="admin"]').forEach((element) => {
+      element.classList.add('d-none');
+    });
     return;
   }
 
   const { data } = await supabase.auth.getSession();
-  toggleAuthNav(target, Boolean(data?.session));
+  const currentUser = data?.session?.user || null;
+  toggleAuthNav(target, Boolean(currentUser));
+
+  if (!currentUser) {
+    target.querySelectorAll('[data-auth="admin"]').forEach((element) => {
+      element.classList.add('d-none');
+    });
+    return;
+  }
+
+  const { data: profile, error } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', currentUser.id)
+    .maybeSingle();
+
+  const isAdmin = !error && profile?.role === 'admin';
+  target.querySelectorAll('[data-auth="admin"]').forEach((element) => {
+    element.classList.toggle('d-none', !isAdmin);
+  });
 }
 
 export function mountHeader(targetSelector, currentRoute) {

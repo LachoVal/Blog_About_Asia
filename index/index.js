@@ -16,13 +16,13 @@ const featuredIndicators = document.querySelector('#featured-carousel-indicators
 const featuredInner = document.querySelector('#featured-carousel-inner');
 const featuredCarouselElement = document.querySelector('#featured-carousel');
 
-const countryTabsLoading = document.querySelector('#country-tabs-loading');
-const countryTabs = document.querySelector('#country-tabs');
+const countrySearch = document.querySelector('#countrySearch');
 const postsLoading = document.querySelector('#posts-loading');
-const postsEmpty = document.querySelector('#posts-empty');
-const postsGrid = document.querySelector('#posts-grid');
+const postsContainer = document.querySelector('#postsContainer');
+const heroSeePostsButton = document.querySelector('#hero-see-posts-button');
+const countryPostsTitle = document.querySelector('#country-posts-title');
 
-let allApprovedPosts = [];
+let allPosts = [];
 
 function setHeroBackground() {
 	const heroSection = document.querySelector('.hero-section');
@@ -126,22 +126,6 @@ function renderFeaturedPosts(posts) {
 	featuredCarouselWrapper.classList.remove('d-none');
 }
 
-function createCountryTab(countryId, countryName, active = false) {
-	const item = document.createElement('li');
-	item.className = 'nav-item';
-	item.setAttribute('role', 'presentation');
-
-	const button = document.createElement('button');
-	button.type = 'button';
-	button.className = `nav-link ${active ? 'active' : ''}`;
-	button.setAttribute('role', 'tab');
-	button.dataset.countryId = countryId;
-	button.textContent = countryName;
-
-	item.appendChild(button);
-	return item;
-}
-
 function createPostCard(post) {
 	const column = document.createElement('article');
 	column.className = 'col';
@@ -178,41 +162,16 @@ function createPostCard(post) {
 	return column;
 }
 
-function renderPostsGrid(countryId = 'all') {
-	postsGrid.innerHTML = '';
+function renderPosts(postsArray) {
+	postsContainer.innerHTML = '';
 
-	const filteredPosts = countryId === 'all'
-		? allApprovedPosts
-		: allApprovedPosts.filter((post) => post.country_id === countryId);
-
-	if (!filteredPosts.length) {
-		showAlert(postsEmpty, 'No approved posts found for this country.', 'light');
+	if (!postsArray.length) {
+		postsContainer.innerHTML = '<p class="text-muted">No posts found for this country.</p>';
 		return;
 	}
 
-	hideElement(postsEmpty);
-	filteredPosts.forEach((post) => {
-		postsGrid.appendChild(createPostCard(post));
-	});
-}
-
-function wireTabFiltering() {
-	countryTabs.addEventListener('click', (event) => {
-		const target = event.target;
-		if (!(target instanceof HTMLButtonElement)) {
-			return;
-		}
-
-		if (!target.matches('.nav-link[data-country-id]')) {
-			return;
-		}
-
-		countryTabs.querySelectorAll('.nav-link').forEach((tab) => {
-			tab.classList.remove('active');
-		});
-
-		target.classList.add('active');
-		renderPostsGrid(target.dataset.countryId || 'all');
+	postsArray.forEach((post) => {
+		postsContainer.appendChild(createPostCard(post));
 	});
 }
 
@@ -223,19 +182,6 @@ async function fetchFeaturedPosts(supabase) {
 		.eq('is_approved', true)
 		.order('created_at', { ascending: false })
 		.limit(3);
-
-	if (error) {
-		throw new Error(error.message);
-	}
-
-	return data || [];
-}
-
-async function fetchCountries(supabase) {
-	const { data, error } = await supabase
-		.from('countries')
-		.select('id, name')
-		.order('name', { ascending: true });
 
 	if (error) {
 		throw new Error(error.message);
@@ -268,22 +214,17 @@ async function ensureAuthenticated(supabase) {
 	return true;
 }
 
-function renderCountryTabs(countries) {
-	countryTabs.innerHTML = '';
-	countryTabs.appendChild(createCountryTab('all', 'All', true));
-
-	countries.forEach((country) => {
-		countryTabs.appendChild(createCountryTab(country.id, country.name));
-	});
-}
-
 async function initDashboard() {
 	setHeroBackground();
+
+	heroSeePostsButton?.addEventListener('click', (event) => {
+		event.preventDefault();
+		countryPostsTitle?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+	});
 
 	const supabase = requireSupabase();
 	if (!supabase) {
 		showAlert(featuredLoading, 'Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env.', 'warning');
-		showAlert(countryTabsLoading, 'Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env.', 'warning');
 		showAlert(postsLoading, 'Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env.', 'warning');
 		return;
 	}
@@ -294,27 +235,31 @@ async function initDashboard() {
 	}
 
 	try {
-		const [featuredPosts, countries, approvedPosts] = await Promise.all([
+		const [featuredPosts, approvedPosts] = await Promise.all([
 			fetchFeaturedPosts(supabase),
-			fetchCountries(supabase),
 			fetchApprovedPosts(supabase)
 		]);
 
-		allApprovedPosts = approvedPosts;
+		allPosts = approvedPosts;
 
 		hideElement(featuredLoading);
 		renderFeaturedPosts(featuredPosts);
 
-		hideElement(countryTabsLoading);
-		renderCountryTabs(countries);
-
 		hideElement(postsLoading);
-		renderPostsGrid('all');
-		wireTabFiltering();
+		renderPosts(allPosts);
+
+		countrySearch?.addEventListener('input', (event) => {
+			const searchTerm = event.target.value.toLowerCase();
+			const filteredArray = allPosts.filter((post) => {
+				const countryName = normalizeCountryName(post).toLowerCase();
+				return countryName.includes(searchTerm);
+			});
+
+			renderPosts(filteredArray);
+		});
 	} catch (error) {
 		hideElement(featuredCarouselWrapper);
 		showAlert(featuredLoading, `Could not load featured posts: ${error.message}`, 'danger');
-		showAlert(countryTabsLoading, `Could not load countries: ${error.message}`, 'danger');
 		showAlert(postsLoading, `Could not load posts: ${error.message}`, 'danger');
 	}
 }
