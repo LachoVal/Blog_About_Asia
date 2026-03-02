@@ -1,4 +1,4 @@
-import { Tooltip } from 'bootstrap';
+import { Modal, Tooltip } from 'bootstrap';
 import { mountFooter } from '/src/components/footer/footer.js';
 import { mountHeader } from '/src/components/header/header.js';
 import { requireSupabase } from '/src/lib/supabaseClient.js';
@@ -9,11 +9,24 @@ mountFooter('#app-footer');
 const tableWrap = document.querySelector('#my-posts-table-wrap');
 const tableBody = document.querySelector('#my-posts-tbody');
 const message = document.querySelector('#my-posts-message');
+const createPostButton = document.querySelector('#create-post-button');
+const postEditorModalElement = document.querySelector('#postEditorModal');
+const postEditorModalLabel = document.querySelector('#postEditorModalLabel');
+const postEditorForm = document.querySelector('#post-editor-form');
+const editorPostId = document.querySelector('#editor-post-id');
+const editorPostTitle = document.querySelector('#editor-post-title');
+const editorPostContent = document.querySelector('#editor-post-content');
+const editorPostPhoto = document.querySelector('#editor-post-photo');
+const postEditorSubmit = document.querySelector('#post-editor-submit');
+const postEditorMessage = document.querySelector('#post-editor-message');
 
 const state = {
   supabase: null,
   currentUser: null,
-  posts: []
+  posts: [],
+  editorMode: 'create',
+  editorModal: null,
+  fallbackCountryId: null
 };
 
 function showMessage(text, variant = 'info') {
@@ -25,6 +38,69 @@ function showMessage(text, variant = 'info') {
 function hideMessage() {
   message.classList.add('d-none');
   message.textContent = '';
+}
+
+function setEditorMessage(text, variant = 'secondary') {
+  postEditorMessage.className = `small mt-3 mb-0 text-${variant}`;
+  postEditorMessage.textContent = text;
+}
+
+function clearEditorMessage() {
+  postEditorMessage.className = 'small mt-3 mb-0';
+  postEditorMessage.textContent = '';
+}
+
+function resetEditorForm() {
+  editorPostId.value = '';
+  editorPostTitle.value = '';
+  editorPostContent.value = '';
+  editorPostPhoto.value = '';
+  clearEditorMessage();
+}
+
+function openCreateModal() {
+  state.editorMode = 'create';
+  resetEditorForm();
+  postEditorModalLabel.textContent = 'Create Post';
+  postEditorSubmit.textContent = 'Create';
+  state.editorModal.show();
+}
+
+async function openEditModal(postId) {
+  state.editorMode = 'edit';
+  resetEditorForm();
+  postEditorModalLabel.textContent = 'Edit Post';
+  postEditorSubmit.textContent = 'Save Changes';
+
+  setEditorMessage('Loading post...', 'secondary');
+  const { data, error } = await state.supabase
+    .from('posts')
+    .select('id, title, content')
+    .eq('id', postId)
+    .eq('author_id', state.currentUser.id)
+    .maybeSingle();
+
+  if (error || !data) {
+    setEditorMessage(error?.message || 'Unable to load this post.', 'danger');
+    return;
+  }
+
+  editorPostId.value = data.id;
+  editorPostTitle.value = data.title || '';
+  editorPostContent.value = data.content || '';
+  clearEditorMessage();
+  state.editorModal.show();
+}
+
+function fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      resolve(typeof reader.result === 'string' ? reader.result : null);
+    };
+    reader.onerror = () => reject(new Error('Unable to read selected file.'));
+    reader.readAsDataURL(file);
+  });
 }
 
 function renderStatusBadge(isApproved) {
@@ -125,6 +201,16 @@ async function fetchMyPosts() {
   renderPostsTable(state.posts);
 }
 
+async function loadFallbackCountryId() {
+  const { data, error } = await state.supabase.from('countries').select('id').limit(1);
+  if (error) {
+    state.fallbackCountryId = null;
+    return;
+  }
+
+  state.fallbackCountryId = data?.[0]?.id || null;
+}
+
 function removeRowFromDom(postId) {
   const row = tableBody.querySelector(`tr[data-post-id="${postId}"]`);
   if (row) {
@@ -153,13 +239,108 @@ async function handleDelete(postId) {
   removeRowFromDom(postId);
 }
 
+async function handleEditorSubmit(event) {
+  event.preventDefault();
+
+  const title = editorPostTitle.value.trim();
+  const content = editorPostContent.value.trim();
+  const selectedFile = editorPostPhoto.files?.[0] || null;
+
+  if (!title || !content) {
+    setEditorMessage('Title and content are required.', 'danger');
+    return;
+  }
+
+  postEditorSubmit.disabled = true;
+  setEditorMessage(state.editorMode === 'edit' ? 'Saving changes...' : 'Creating post...', 'secondary');
+
+  let imageUrl;
+  if (selectedFile) {
+    try {
+      imageUrl = await fileToDataUrl(selectedFile);
+    } catch (error) {
+      postEditorSubmit.disabled = false;
+      setEditorMessage(error instanceof Error ? error.message : 'Unable to read selected file.', 'danger');
+      return;
+    }
+  }
+
+  if (state.editorMode === 'edit') {
+    const postId = editorPostId.value;
+    if (!postId) {
+      postEditorSubmit.disabled = false;
+      setEditorMessage('Missing post id.', 'danger');
+      return;
+    }
+
+    const updatePayload = {
+      title,
+      content
+    };
+
+    if (imageUrl) {
+      updatePayload.image_url = imageUrl;
+    }
+
+    const { error } = await state.supabase
+      .from('posts')
+      .update(updatePayload)
+      .eq('id', postId)
+      .eq('author_id', state.currentUser.id);
+
+    if (error) {
+      postEditorSubmit.disabled = false;
+      setEditorMessage(error.message, 'danger');
+      return;
+    }
+
+    await fetchMyPosts();
+    state.editorModal.hide();
+    showMessage('Post updated successfully.', 'success');
+    postEditorSubmit.disabled = false;
+    return;
+  }
+
+  const insertPayload = {
+    title,
+    content,
+    author_id: state.currentUser.id
+  };
+
+  if (imageUrl) {
+    insertPayload.image_url = imageUrl;
+  }
+
+  if (state.fallbackCountryId) {
+    insertPayload.country_id = state.fallbackCountryId;
+  }
+
+  const { error } = await state.supabase.from('posts').insert(insertPayload);
+  if (error) {
+    postEditorSubmit.disabled = false;
+    setEditorMessage(error.message, 'danger');
+    return;
+  }
+
+  await fetchMyPosts();
+  state.editorModal.hide();
+  showMessage('Post created successfully.', 'success');
+  postEditorSubmit.disabled = false;
+}
+
 function setupActions() {
+  if (createPostButton) {
+    createPostButton.addEventListener('click', () => {
+      openCreateModal();
+    });
+  }
+
   tableBody.addEventListener('click', async (event) => {
     const editButton = event.target.closest('.js-edit-post');
     if (editButton) {
       const postId = editButton.getAttribute('data-post-id');
       if (postId) {
-        window.location.assign(`/create-post.html?edit=${encodeURIComponent(postId)}`);
+        await openEditModal(postId);
       }
       return;
     }
@@ -172,6 +353,8 @@ function setupActions() {
       }
     }
   });
+
+  postEditorForm.addEventListener('submit', handleEditorSubmit);
 }
 
 async function init() {
@@ -187,7 +370,10 @@ async function init() {
     return;
   }
 
+  state.editorModal = new Modal(postEditorModalElement);
+
   try {
+    await loadFallbackCountryId();
     await fetchMyPosts();
   } catch (error) {
     showMessage(error instanceof Error ? error.message : 'Unable to load posts.', 'danger');

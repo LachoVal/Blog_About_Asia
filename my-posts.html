@@ -15,10 +15,10 @@
     <main class="container py-4 py-md-5">
       <section class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="mb-0">My Posts</h2>
-        <a href="/create-post.html" class="btn btn-primary">
+        <button id="create-post-button" type="button" class="btn btn-primary">
           <i class="bi bi-plus-lg me-2"></i>
           Create Post
-        </a>
+        </button>
       </section>
 
       <div id="my-posts-message" class="alert d-none" role="alert"></div>
@@ -34,6 +34,43 @@
           </thead>
           <tbody id="my-posts-tbody"></tbody>
         </table>
+      </div>
+
+      <div class="modal fade" id="postEditorModal" tabindex="-1" aria-labelledby="postEditorModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="postEditorModalLabel">Create Post</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="post-editor-form">
+              <div class="modal-body">
+                <input type="hidden" id="editor-post-id" />
+
+                <div class="mb-3">
+                  <label for="editor-post-title" class="form-label">Title</label>
+                  <input id="editor-post-title" type="text" class="form-control" required />
+                </div>
+
+                <div class="mb-3">
+                  <label for="editor-post-content" class="form-label">Content</label>
+                  <textarea id="editor-post-content" class="form-control" rows="5" required></textarea>
+                </div>
+
+                <div class="mb-1">
+                  <label for="editor-post-photo" class="form-label">Photo Attachment</label>
+                  <input id="editor-post-photo" type="file" class="form-control" accept="image/*" />
+                </div>
+
+                <p id="post-editor-message" class="small mt-3 mb-0"></p>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button id="post-editor-submit" type="submit" class="btn btn-primary">Save</button>
+              </div>
+            </form>
+          </div>
+        </div>
       </div>
     </main>
 
