@@ -7,7 +7,7 @@ function rewritePostsIdPath(urlValue) {
   }
 
   const url = new URL(urlValue, 'http://localhost');
-  const match = url.pathname.match(/^\/posts\/([^/?#]+)\/?$/);
+  const match = url.pathname.match(/^\/posts\/([a-zA-Z0-9-]{8,})\/?$/);
   if (!match) {
     return null;
   }
@@ -87,6 +87,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         home: resolve(__dirname, 'index.html'),
+        post: resolve(__dirname, 'post.html'),
         login: resolve(__dirname, 'login/index.html'),
         register: resolve(__dirname, 'register/index.html'),
         admin: resolve(__dirname, 'admin/index.html'),

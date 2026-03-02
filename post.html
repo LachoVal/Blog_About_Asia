@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Post Details | Asian Travel Blog</title>
+    <title>Post | Asian Travel Blog</title>
   </head>
   <body>
     <div id="app-header"></div>
@@ -36,13 +36,10 @@
             <span class="text-body-secondary">•</span>
             <time id="post-date" class="text-body-secondary"></time>
           </div>
-          <div class="d-flex flex-wrap gap-2">
-            <button id="favorite-button" type="button" class="btn btn-outline-danger btn-lg">
-              <span id="favorite-icon" aria-hidden="true">♡</span>
-              <span id="favorite-label">Add to Favorites</span>
-            </button>
-            <a class="btn btn-outline-secondary btn-lg" href="/favorites">Go to Favorites</a>
-          </div>
+          <button id="favorite-button" type="button" class="btn btn-outline-danger btn-lg">
+            <span id="favorite-icon" aria-hidden="true">♡</span>
+            <span id="favorite-label">Add to Favorites</span>
+          </button>
           <p id="favorite-message" class="small mt-2 mb-0"></p>
         </header>
 
@@ -83,6 +80,6 @@
 
     <div id="app-footer"></div>
 
-    <script type="module" src="/posts/posts.js"></script>
+    <script type="module" src="/post.js"></script>
   </body>
 </html>

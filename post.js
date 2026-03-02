@@ -1,6 +1,5 @@
 import { mountFooter } from '/src/components/footer/footer.js';
 import { mountHeader } from '/src/components/header/header.js';
-import { getPostIdFromRoute } from '/src/router/router.js';
 import { requireSupabase } from '/src/lib/supabaseClient.js';
 
 mountHeader('#app-header');
@@ -36,7 +35,7 @@ const commentsList = document.querySelector('#comments-list');
 
 const state = {
   supabase: null,
-  postId: getPostIdFromRoute(''),
+  postId: '',
   post: null,
   currentUser: null,
   currentProfile: null,
@@ -44,32 +43,6 @@ const state = {
   favoriteId: null,
   comments: []
 };
-
-function canonicalizePostUrlIfNeeded() {
-  const currentPath = window.location.pathname || '';
-  const currentSearch = window.location.search || '';
-
-  const pathMatch = currentPath.match(/^\/posts\/([^/?#]+)\/?$/);
-  if (pathMatch) {
-    const rawId = decodeURIComponent(pathMatch[1] || '');
-    if (rawId && rawId !== state.postId) {
-      window.location.replace(`/posts/${encodeURIComponent(state.postId)}${currentSearch}`);
-      return true;
-    }
-    return false;
-  }
-
-  const params = new URLSearchParams(currentSearch);
-  const rawQueryId = params.get('id') || '';
-  if (rawQueryId && rawQueryId !== state.postId) {
-    params.set('id', state.postId);
-    const nextSearch = params.toString();
-    window.location.replace(`/posts/index.html?${nextSearch}`);
-    return true;
-  }
-
-  return false;
-}
 
 function showGlobalAlert(message, variant = 'warning') {
   pageAlert.className = `alert alert-${variant}`;
@@ -90,6 +63,11 @@ function setTextMessage(target, message, variant = 'secondary') {
 function clearTextMessage(target) {
   target.className = 'small mt-2 mb-0';
   target.textContent = '';
+}
+
+function extractPostIdFromQuery() {
+  const searchParams = new URLSearchParams(window.location.search);
+  return searchParams.get('id');
 }
 
 function formatPublishedDate(value) {
@@ -145,6 +123,7 @@ function showPostNotFound() {
 function renderPost(post) {
   postCoverImage.src = post.image_url || COVER_PLACEHOLDER;
   postCoverImage.alt = post.title || 'Travel post cover image';
+
   postTitle.textContent = post.title || 'Untitled Post';
   postCountry.textContent = post?.countries?.name || 'Unknown Country';
   postAuthor.textContent = post?.profiles?.username || 'Unknown Author';
@@ -166,11 +145,17 @@ async function loadCurrentUser() {
     return;
   }
 
-  const { data: profile } = await state.supabase
+  const { data: profile, error } = await state.supabase
     .from('profiles')
     .select('id, username, role')
     .eq('id', state.currentUser.id)
     .maybeSingle();
+
+  if (error) {
+    state.currentProfile = null;
+    state.isAdmin = false;
+    return;
+  }
 
   state.currentProfile = profile || null;
   state.isAdmin = profile?.role === 'admin';
@@ -193,6 +178,7 @@ async function fetchPostById(postId) {
 function updateFavoriteButtonUI() {
   const isLoggedIn = Boolean(state.currentUser);
   const isFavorite = Boolean(state.favoriteId);
+
   favoriteButton.disabled = !isLoggedIn;
 
   if (!isLoggedIn) {
@@ -241,7 +227,11 @@ async function toggleFavorite() {
   favoriteButton.disabled = true;
 
   if (state.favoriteId) {
-    const { error } = await state.supabase.from('favorites').delete().eq('id', state.favoriteId);
+    const { error } = await state.supabase
+      .from('favorites')
+      .delete()
+      .eq('id', state.favoriteId);
+
     if (error) {
       favoriteButton.disabled = false;
       setTextMessage(favoriteMessage, error.message, 'danger');
@@ -302,6 +292,7 @@ function createCommentElement(comment) {
   avatar.className = 'rounded-circle border';
 
   const authorText = document.createElement('div');
+
   const username = document.createElement('strong');
   username.textContent = comment?.profiles?.username || 'Unknown User';
 
@@ -339,6 +330,7 @@ function createCommentElement(comment) {
 
   body.append(top, text);
   card.appendChild(body);
+
   return card;
 }
 
@@ -430,7 +422,11 @@ async function handleEditComment(comment) {
 
   hideGlobalAlert();
 
-  const { error } = await state.supabase.from('comments').update({ content: trimmed }).eq('id', comment.id);
+  const { error } = await state.supabase
+    .from('comments')
+    .update({ content: trimmed })
+    .eq('id', comment.id);
+
   if (error) {
     showGlobalAlert(error.message, 'danger');
     return;
@@ -452,7 +448,11 @@ async function handleDeleteComment(comment) {
 
   hideGlobalAlert();
 
-  const { error } = await state.supabase.from('comments').delete().eq('id', comment.id);
+  const { error } = await state.supabase
+    .from('comments')
+    .delete()
+    .eq('id', comment.id);
+
   if (error) {
     showGlobalAlert(error.message, 'danger');
     return;
@@ -475,6 +475,7 @@ function setupAuthDependentUI() {
 
 async function init() {
   state.supabase = requireSupabase();
+  state.postId = extractPostIdFromQuery() || '';
 
   if (!state.supabase) {
     showGlobalAlert('Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env.', 'warning');
@@ -484,11 +485,6 @@ async function init() {
 
   if (!state.postId) {
     showPostNotFound();
-    return;
-  }
-
-  const wasCanonicalized = canonicalizePostUrlIfNeeded();
-  if (wasCanonicalized) {
     return;
   }
 

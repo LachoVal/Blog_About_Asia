@@ -8,6 +8,16 @@ export const ROUTES = {
   FAVORITES: '/favorites'
 };
 
+function normalizePostId(value) {
+  if (!value) {
+    return '';
+  }
+
+  return String(value)
+    .trim()
+    .replace(/[.,;:!?)+\]]+$/g, '');
+}
+
 function normalizePathname(pathname) {
   if (!pathname || pathname === '/' || pathname === '/index.html') {
     return '/';
@@ -88,13 +98,13 @@ export function toPostRoute(postId) {
   return `/posts/${encodeURIComponent(String(postId))}`;
 }
 
-export function getPostIdFromRoute(defaultId = '1') {
+export function getPostIdFromRoute(defaultId = '') {
   const matchedRoute = matchRoute();
   if (matchedRoute?.key === 'POSTS' && matchedRoute.params.id) {
-    return matchedRoute.params.id;
+    return normalizePostId(matchedRoute.params.id) || defaultId;
   }
 
-  return new URLSearchParams(window.location.search).get('id') || defaultId;
+  return normalizePostId(new URLSearchParams(window.location.search).get('id')) || defaultId;
 }
 
 export function isRouteActive(targetRoute, pathname = getCurrentPathname()) {
