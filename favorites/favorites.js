@@ -87,6 +87,15 @@ function createFavoriteCard(favorite) {
     </div>
   `;
 
+  const image = card.querySelector('.favorite-image');
+  if (image) {
+    image.addEventListener('error', () => {
+      if (image.src !== COVER_PLACEHOLDER) {
+        image.src = COVER_PLACEHOLDER;
+      }
+    });
+  }
+
   return card;
 }
 

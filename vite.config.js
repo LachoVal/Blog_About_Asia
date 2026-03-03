@@ -33,6 +33,10 @@ function rewriteAuthPath(urlValue) {
     return `/register/index.html${suffix}`;
   }
 
+  if (url.pathname === '/admin' || url.pathname === '/admin/') {
+    return `/admin/index.html${suffix}`;
+  }
+
   return null;
 }
 

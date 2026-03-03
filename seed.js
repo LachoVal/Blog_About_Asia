@@ -80,7 +80,7 @@ const COUNTRIES = [
     description:
       'South Korea combines cutting-edge cities, rich royal history, and mountain landscapes, plus one of the most exciting cafe cultures in Asia.',
     image_url:
-      'https://images.unsplash.com/photo-1538485399081-7c897ed80a94?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1534274988757-a28bf1a57c17?auto=format&fit=crop&w=1200&q=80',
   },
 ];
 

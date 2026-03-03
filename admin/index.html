@@ -4,20 +4,145 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Admin | Asian Travel Blog</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+    />
     <link rel="stylesheet" href="/admin/admin.css" />
   </head>
   <body>
     <div id="app-header"></div>
 
-    <main class="container py-5">
-      <h1 class="mb-3">Admin Dashboard</h1>
-      <p class="mb-4">Manage blog content and create new travel posts.</p>
-      <div class="d-flex gap-2 flex-wrap">
-        <a class="btn btn-primary" href="/create-post">Create New Post</a>
-        <a class="btn btn-outline-secondary" href="/favorites/index.html">View Favorites</a>
+    <main id="admin-dashboard" class="container py-4 py-md-5 d-none">
+      <h1 class="mb-4">Admin Dashboard</h1>
+
+      <ul class="nav nav-tabs" id="adminTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button
+            class="nav-link active"
+            id="pending-posts-tab"
+            data-bs-toggle="tab"
+            data-bs-target="#pending-posts-pane"
+            type="button"
+            role="tab"
+            aria-controls="pending-posts-pane"
+            aria-selected="true"
+          >
+            Pending Posts
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button
+            class="nav-link"
+            id="manage-countries-tab"
+            data-bs-toggle="tab"
+            data-bs-target="#manage-countries-pane"
+            type="button"
+            role="tab"
+            aria-controls="manage-countries-pane"
+            aria-selected="false"
+          >
+            Manage Countries
+          </button>
+        </li>
+      </ul>
+
+      <div class="tab-content border border-top-0 rounded-bottom p-3 p-md-4" id="adminTabsContent">
+        <section
+          class="tab-pane fade show active"
+          id="pending-posts-pane"
+          role="tabpanel"
+          aria-labelledby="pending-posts-tab"
+          tabindex="0"
+        >
+          <div id="pending-posts-message" class="alert d-none" role="alert"></div>
+
+          <div id="pending-posts-table-wrap" class="table-responsive d-none">
+            <table class="table table-hover align-middle mb-0">
+              <thead>
+                <tr>
+                  <th scope="col">Title</th>
+                  <th scope="col">Author</th>
+                  <th scope="col">Country</th>
+                  <th scope="col">Date</th>
+                  <th scope="col" class="text-end">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="pending-posts-tbody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section
+          class="tab-pane fade"
+          id="manage-countries-pane"
+          role="tabpanel"
+          aria-labelledby="manage-countries-tab"
+          tabindex="0"
+        >
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2 class="h5 mb-0">Countries</h2>
+            <button id="add-country-button" type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#countryModal">
+              <i class="bi bi-plus-lg me-2" aria-hidden="true"></i>
+              Add New Country
+            </button>
+          </div>
+
+          <div id="countries-message" class="alert d-none" role="alert"></div>
+
+          <div id="countries-table-wrap" class="table-responsive d-none">
+            <table class="table table-hover align-middle mb-0">
+              <thead>
+                <tr>
+                  <th scope="col">Name</th>
+                  <th scope="col">Description</th>
+                  <th scope="col">Image URL</th>
+                  <th scope="col" class="text-end">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="countries-tbody"></tbody>
+            </table>
+          </div>
+        </section>
       </div>
-      <p id="admin-status" class="mt-3 mb-0 text-body-secondary"></p>
     </main>
+
+    <div class="modal fade" id="countryModal" tabindex="-1" aria-labelledby="countryModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="countryModalLabel">Add New Country</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <form id="country-form">
+            <div class="modal-body">
+              <input type="hidden" id="country-id" />
+
+              <div class="mb-3">
+                <label for="country-name" class="form-label">Name</label>
+                <input id="country-name" type="text" class="form-control" required />
+              </div>
+
+              <div class="mb-3">
+                <label for="country-description" class="form-label">Description</label>
+                <textarea id="country-description" class="form-control" rows="4"></textarea>
+              </div>
+
+              <div class="mb-1">
+                <label for="country-image-url" class="form-label">Image URL</label>
+                <input id="country-image-url" type="url" class="form-control" />
+              </div>
+
+              <p id="country-form-message" class="small mt-3 mb-0"></p>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+              <button id="country-form-submit" type="submit" class="btn btn-primary">Save Country</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
 
     <div id="app-footer"></div>
 

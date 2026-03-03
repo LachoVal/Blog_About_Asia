@@ -191,10 +191,11 @@ async function fetchPostById(postId) {
     .from('posts')
     .select('id, title, content, image_url, created_at, author_id, country_id, profiles!posts_author_id_fkey(username), countries!posts_country_id_fkey(name)')
     .eq('id', postId)
-    .maybeSingle();
+    .single();
 
-  if (error) {
-    throw new Error(error.message);
+  if (error || !data) {
+    window.location.replace('/404.html');
+    return null;
   }
 
   return data;
@@ -568,7 +569,7 @@ async function init() {
   }
 
   if (!state.postId) {
-    showPostNotFound();
+    window.location.replace('/404.html');
     return;
   }
 
@@ -578,7 +579,6 @@ async function init() {
 
     const post = await fetchPostById(state.postId);
     if (!post) {
-      showPostNotFound();
       return;
     }
 
