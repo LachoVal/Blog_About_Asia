@@ -84,6 +84,10 @@ function setupAvatarUpload(target) {
     return;
   }
 
+  if (profileModalElement.parentElement !== document.body) {
+    document.body.appendChild(profileModalElement);
+  }
+
   const profileModalInstance = Modal.getOrCreateInstance(profileModalElement);
 
   navAvatar.addEventListener('click', () => {
