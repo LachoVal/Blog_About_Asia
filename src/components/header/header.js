@@ -1,5 +1,6 @@
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
+import { Modal } from 'bootstrap';
 
 import headerTemplate from './header.html?raw';
 import './header.css';
@@ -83,6 +84,12 @@ function setupAvatarUpload(target) {
     return;
   }
 
+  const profileModalInstance = Modal.getOrCreateInstance(profileModalElement);
+
+  navAvatar.addEventListener('click', () => {
+    profileModalInstance.show();
+  });
+
   profileModalElement.addEventListener('show.bs.modal', () => {
     avatarInput.value = '';
     setAvatarFeedback(target, '');
@@ -148,8 +155,7 @@ function setupAvatarUpload(target) {
       navAvatar.src = avatarUrl;
       setAvatarFeedback(target, 'Avatar updated successfully.', 'success');
 
-      const modalInstance = window.bootstrap?.Modal.getOrCreateInstance(profileModalElement);
-      modalInstance?.hide();
+      profileModalInstance.hide();
       window.alert('Avatar updated successfully.');
     } catch (error) {
       const errorMessage = error?.message || 'Failed to upload avatar.';
