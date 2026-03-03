@@ -195,6 +195,24 @@ export function mountHeader(targetSelector, currentRoute) {
     });
   }
 
+  const destinationsLink = target.querySelector('a[data-route="/destinations.html"]');
+  if (destinationsLink) {
+    destinationsLink.addEventListener('click', async (event) => {
+      const supabase = requireSupabase();
+      if (!supabase) {
+        event.preventDefault();
+        window.location.assign('/login/index.html');
+        return;
+      }
+
+      const { data } = await supabase.auth.getSession();
+      if (!data?.session) {
+        event.preventDefault();
+        window.location.assign('/login/index.html');
+      }
+    });
+  }
+
   setupAvatarUpload(target);
   syncAuthNav(target);
 

@@ -111,6 +111,12 @@ async function init() {
     return;
   }
 
+  const { data: sessionData } = await supabase.auth.getSession();
+  if (!sessionData?.session) {
+    window.location.assign('/login/index.html');
+    return;
+  }
+
   try {
     const countries = await fetchCountries(supabase);
     hideLoading();
