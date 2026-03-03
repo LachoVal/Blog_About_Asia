@@ -21,7 +21,39 @@
         <li class="nav-item" data-auth="guest"><a class="nav-link" data-route="/login" href="/login/index.html">Login</a></li>
         <li class="nav-item" data-auth="guest"><a class="nav-link" data-route="/register" href="/register/index.html">Register</a></li>
         <li class="nav-item d-none" data-auth="user"><a class="nav-link" data-action="logout" href="#">Logout</a></li>
+        <li class="nav-item d-none d-flex align-items-center" data-auth="user">
+          <img
+            id="navAvatar"
+            src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Ccircle cx='20' cy='20' r='20' fill='%23e4e6eb'/%3E%3Ccircle cx='20' cy='15' r='7' fill='white'/%3E%3Cpath d='M7 35c2.6-6.5 8-10 13-10s10.4 3.5 13 10' fill='white'/%3E%3C/svg%3E"
+            alt="User avatar"
+            class="rounded-circle"
+            width="40"
+            height="40"
+            style="object-fit: cover; cursor: pointer;"
+            data-bs-toggle="modal"
+            data-bs-target="#profileModal"
+          >
+        </li>
       </ul>
     </div>
   </nav>
 </header>
+
+<div class="modal fade" id="profileModal" tabindex="-1" aria-labelledby="profileModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="profileModalLabel">Update Profile Avatar</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <input type="file" id="avatarInput" accept="image/*" class="form-control">
+        <div id="avatarFeedback" class="mt-2 small"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" id="saveAvatarBtn">Upload &amp; Save</button>
+      </div>
+    </div>
+  </div>
+</div>
