@@ -130,7 +130,7 @@ The seed script creates demo users, profiles, countries, posts, comments, and fa
 - `/` → Home
 - `/post.html` → Single post view
 - `/destinations.html` → Destinations
-- `/country-articles.html` → Country articles
+- `/country-articles.html` → Country posts
 - `/my-posts.html` → User’s posts
 - `/posts/:id` → Rewritten to `/posts/index.html?id=<id>` by Vite plugin
 - `/login` → Login page

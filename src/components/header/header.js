@@ -5,6 +5,7 @@ import headerTemplate from './header.html?raw';
 import './header.css';
 import { getCurrentRouteBase, isRouteActive } from '/src/router/router.js';
 import { requireSupabase } from '/src/lib/supabaseClient.js';
+import { getLoginPath, redirectGuestFromProtectedPage } from '/src/lib/auth.js';
 
 const DEFAULT_AVATAR_URL = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Ccircle cx='20' cy='20' r='20' fill='%23e4e6eb'/%3E%3Ccircle cx='20' cy='15' r='7' fill='white'/%3E%3Cpath d='M7 35c2.6-6.5 8-10 13-10s10.4 3.5 13 10' fill='white'/%3E%3C/svg%3E";
 
@@ -169,6 +170,8 @@ export function mountHeader(targetSelector, currentRoute) {
     return;
   }
 
+  redirectGuestFromProtectedPage();
+
   target.innerHTML = headerTemplate;
   const links = target.querySelectorAll('[data-route]');
   const routeToUse = currentRoute || getCurrentRouteBase();
@@ -186,30 +189,12 @@ export function mountHeader(targetSelector, currentRoute) {
       event.preventDefault();
       const supabase = requireSupabase();
       if (!supabase) {
-        window.location.assign('/login/index.html');
+        window.location.assign(getLoginPath());
         return;
       }
 
       await supabase.auth.signOut();
-      window.location.assign('/login/index.html');
-    });
-  }
-
-  const destinationsLink = target.querySelector('a[data-route="/destinations.html"]');
-  if (destinationsLink) {
-    destinationsLink.addEventListener('click', async (event) => {
-      const supabase = requireSupabase();
-      if (!supabase) {
-        event.preventDefault();
-        window.location.assign('/login/index.html');
-        return;
-      }
-
-      const { data } = await supabase.auth.getSession();
-      if (!data?.session) {
-        event.preventDefault();
-        window.location.assign('/login/index.html');
-      }
+      window.location.assign(getLoginPath());
     });
   }
 

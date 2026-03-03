@@ -2,6 +2,7 @@ import { mountFooter } from '/src/components/footer/footer.js';
 import { mountHeader } from '/src/components/header/header.js';
 import { requireSupabase } from '/src/lib/supabaseClient.js';
 import { Modal } from 'bootstrap';
+import { redirectGuestFromProtectedPage } from '/src/lib/auth.js';
 
 mountHeader('#app-header');
 mountFooter('#app-footer');
@@ -576,6 +577,11 @@ function setupAuthDependentUI() {
 }
 
 async function init() {
+  const redirected = await redirectGuestFromProtectedPage();
+  if (redirected) {
+    return;
+  }
+
   state.supabase = requireSupabase();
   state.postId = extractPostIdFromQuery() || '';
 

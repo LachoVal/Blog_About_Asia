@@ -2,6 +2,7 @@ import { Modal, Tooltip } from 'bootstrap';
 import { mountFooter } from '/src/components/footer/footer.js';
 import { mountHeader } from '/src/components/header/header.js';
 import { requireSupabase } from '/src/lib/supabaseClient.js';
+import { getLoginPath, redirectGuestFromProtectedPage } from '/src/lib/auth.js';
 
 mountHeader('#app-header', '/my-posts.html');
 mountFooter('#app-footer');
@@ -197,7 +198,7 @@ async function requireCurrentUser() {
   const currentUser = data?.session?.user || null;
 
   if (!currentUser) {
-    window.location.replace('/login.html');
+    window.location.replace(getLoginPath());
     return null;
   }
 
@@ -381,6 +382,11 @@ function setupActions() {
 }
 
 async function init() {
+  const redirected = await redirectGuestFromProtectedPage();
+  if (redirected) {
+    return;
+  }
+
   state.supabase = requireSupabase();
   if (!state.supabase) {
     showMessage('Supabase is not configured. Please set your environment variables.', 'danger');

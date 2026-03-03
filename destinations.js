@@ -1,6 +1,7 @@
 import { mountFooter } from '/src/components/footer/footer.js';
 import { mountHeader } from '/src/components/header/header.js';
 import { requireSupabase } from '/src/lib/supabaseClient.js';
+import { getLoginPath } from '/src/lib/auth.js';
 
 mountHeader('#app-header');
 mountFooter('#app-footer');
@@ -11,6 +12,8 @@ const message = document.querySelector('#destinations-message');
 
 const IMAGE_PLACEHOLDER =
   'https://images.unsplash.com/photo-1526481280695-3c4691f5e66c?auto=format&fit=crop&w=1200&q=80';
+
+let currentUser = null;
 
 function showMessage(text) {
   message.textContent = text;
@@ -38,7 +41,7 @@ function createCountryCard(country) {
   card.className = 'card h-100 shadow-sm';
 
   const imageLink = document.createElement('a');
-  imageLink.href = toCountryFilterHref(country.id);
+  imageLink.href = currentUser ? toCountryFilterHref(country.id) : getLoginPath();
 
   const image = document.createElement('img');
   image.className = 'card-img-top';
@@ -62,8 +65,8 @@ function createCountryCard(country) {
 
   const button = document.createElement('a');
   button.className = 'btn btn-primary mt-auto';
-  button.href = toCountryFilterHref(country.id);
-  button.textContent = 'See Posts';
+  button.href = currentUser ? toCountryFilterHref(country.id) : getLoginPath();
+  button.textContent = currentUser ? 'See Posts' : 'Login to View Posts';
 
   cardBody.append(title, description, button);
   card.append(imageLink, cardBody);
@@ -112,10 +115,7 @@ async function init() {
   }
 
   const { data: sessionData } = await supabase.auth.getSession();
-  if (!sessionData?.session) {
-    window.location.assign('/login/index.html');
-    return;
-  }
+  currentUser = sessionData?.session?.user || null;
 
   try {
     const countries = await fetchCountries(supabase);

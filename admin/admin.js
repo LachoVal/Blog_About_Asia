@@ -2,6 +2,7 @@ import { Modal, Tooltip } from 'bootstrap';
 import { mountFooter } from '/src/components/footer/footer.js';
 import { mountHeader } from '/src/components/header/header.js';
 import { requireSupabase } from '/src/lib/supabaseClient.js';
+import { redirectGuestFromProtectedPage } from '/src/lib/auth.js';
 
 mountHeader('#app-header', '/admin');
 mountFooter('#app-footer');
@@ -519,6 +520,11 @@ function wireEvents() {
 }
 
 async function ensureAdmin() {
+  const redirected = await redirectGuestFromProtectedPage();
+  if (redirected) {
+    return;
+  }
+
   const supabase = requireSupabase();
   if (!supabase) {
     redirectToHome();

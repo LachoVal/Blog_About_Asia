@@ -1,6 +1,7 @@
 import { mountFooter } from '/src/components/footer/footer.js';
 import { mountHeader } from '/src/components/header/header.js';
 import { requireSupabase } from '/src/lib/supabaseClient.js';
+import { getLoginPath, redirectGuestFromProtectedPage } from '/src/lib/auth.js';
 
 mountHeader('#app-header');
 mountFooter('#app-footer');
@@ -21,20 +22,20 @@ const state = {
 async function getAuthenticatedSession() {
   const supabase = requireSupabase();
   if (!supabase) {
-    window.location.replace('/login/index.html');
+    window.location.replace(getLoginPath());
     return { supabase: null, session: null };
   }
 
   const { data } = await supabase.auth.getSession();
   if (!data?.session) {
-    window.location.replace('/login/index.html');
+    window.location.replace(getLoginPath());
     return { supabase, session: null };
   }
 
   return { supabase, session: data.session };
 }
 
-getAuthenticatedSession();
+redirectGuestFromProtectedPage();
 
 async function getCurrentRole(supabase, userId) {
   if (!supabase || !userId) {

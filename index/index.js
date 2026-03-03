@@ -3,6 +3,7 @@ import { mountFooter } from '/src/components/footer/footer.js';
 import { mountHeader } from '/src/components/header/header.js';
 import { toPostRoute } from '/src/router/router.js';
 import { requireSupabase } from '/src/lib/supabaseClient.js';
+import { getLoginPath } from '/src/lib/auth.js';
 
 mountHeader('#app-header');
 mountFooter('#app-footer');
@@ -36,6 +37,36 @@ const homePostPhoto = document.querySelector('#home-post-photo');
 let allPosts = [];
 let currentUser = null;
 let homeCreatePostModal = null;
+
+function getPostActionHref(postId) {
+	if (!currentUser) {
+		return getLoginPath();
+	}
+
+	return toPostRoute(postId);
+}
+
+function getPostActionLabel() {
+	if (!currentUser) {
+		return 'Login to Read';
+	}
+
+	return 'Read Full Post';
+}
+
+function wireGuestCreatePostPrompt() {
+	const createPostTrigger = document.querySelector('[data-bs-target="#createPostModal"]');
+	if (!createPostTrigger || currentUser) {
+		return;
+	}
+
+	createPostTrigger.textContent = 'Login to Create Post';
+	createPostTrigger.removeAttribute('data-bs-toggle');
+	createPostTrigger.removeAttribute('data-bs-target');
+	createPostTrigger.addEventListener('click', () => {
+		window.location.assign(getLoginPath());
+	});
+}
 
 function setHeroBackground() {
 	const heroSection = document.querySelector('.hero-section');
@@ -141,8 +172,8 @@ function createFeaturedSlide(post, index) {
 
 	const button = document.createElement('a');
 	button.className = 'btn btn-warning';
-	button.href = toPostRoute(post.id);
-	button.textContent = 'Read Post';
+	button.href = getPostActionHref(post.id);
+	button.textContent = currentUser ? 'Read Post' : 'Login to Read';
 
 	caption.append(heading, button);
 	slideBody.appendChild(caption);
@@ -202,8 +233,8 @@ function createPostCard(post) {
 
 	const link = document.createElement('a');
 	link.className = 'btn btn-outline-primary mt-auto';
-	link.href = toPostRoute(post.id);
-	link.textContent = 'Read Full Post';
+	link.href = getPostActionHref(post.id);
+	link.textContent = getPostActionLabel();
 
 	body.append(countryBadge, title, link);
 	card.append(image, body);
@@ -308,16 +339,6 @@ async function fetchCountryNameById(supabase, countryId) {
 	return data?.name || null;
 }
 
-async function ensureAuthenticated(supabase) {
-	const { data } = await supabase.auth.getSession();
-	if (!data?.session) {
-		window.location.replace('/login/index.html');
-		return null;
-	}
-
-	return data.session.user;
-}
-
 function wireHomeCreatePost(supabase) {
 	homeCreatePostModal = Modal.getOrCreateInstance(createPostModalElement);
 
@@ -400,22 +421,23 @@ async function initDashboard() {
 		return;
 	}
 
-	currentUser = await ensureAuthenticated(supabase);
-	if (!currentUser) {
-		return;
-	}
+	const { data: sessionData } = await supabase.auth.getSession();
+	currentUser = sessionData?.session?.user || null;
+	wireGuestCreatePostPrompt();
 
 	try {
 		const [featuredPosts, approvedPosts, selectedCountryName, countries] = await Promise.all([
 			fetchFeaturedPosts(supabase),
 			fetchApprovedPosts(supabase, selectedCountryId),
 			fetchCountryNameById(supabase, selectedCountryId),
-			fetchCountries(supabase)
+			currentUser ? fetchCountries(supabase) : Promise.resolve([])
 		]);
 
 		allPosts = approvedPosts;
-		populateHomeCountryOptions(countries);
-		wireHomeCreatePost(supabase);
+		if (currentUser) {
+			populateHomeCountryOptions(countries);
+			wireHomeCreatePost(supabase);
+		}
 
 		if (selectedCountryId) {
 			if (selectedCountryName) {

@@ -1,6 +1,7 @@
 import { mountFooter } from '/src/components/footer/footer.js';
 import { mountHeader } from '/src/components/header/header.js';
 import { requireSupabase } from '/src/lib/supabaseClient.js';
+import { getLoginPath, redirectGuestFromProtectedPage } from '/src/lib/auth.js';
 
 mountHeader('#app-header');
 mountFooter('#app-footer');
@@ -121,7 +122,7 @@ async function requireCurrentUser() {
   const currentUser = data?.session?.user || null;
 
   if (!currentUser) {
-    window.location.replace('/login.html');
+    window.location.replace(getLoginPath());
     return null;
   }
 
@@ -187,9 +188,14 @@ list.addEventListener('click', async (event) => {
 });
 
 async function init() {
+  const redirected = await redirectGuestFromProtectedPage();
+  if (redirected) {
+    return;
+  }
+
   state.supabase = requireSupabase();
   if (!state.supabase) {
-    window.location.replace('/login.html');
+    window.location.replace(getLoginPath());
     return;
   }
 
