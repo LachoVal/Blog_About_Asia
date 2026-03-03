@@ -91,6 +91,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         home: resolve(__dirname, 'index.html'),
+        notFound: resolve(__dirname, '404.html'),
         post: resolve(__dirname, 'post.html'),
         destinations: resolve(__dirname, 'destinations.html'),
         countryArticles: resolve(__dirname, 'country-articles.html'),
