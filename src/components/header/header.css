@@ -30,6 +30,10 @@ main {
   backdrop-filter: blur(4px);
 }
 
+.site-header {
+  z-index: 1030;
+}
+
 .navbar .navbar-brand {
   letter-spacing: 0.02em;
 }

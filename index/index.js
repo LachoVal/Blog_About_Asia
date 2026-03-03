@@ -443,7 +443,7 @@ async function initDashboard() {
 			if (selectedCountryName) {
 				countryPostsTitle.textContent = `Posts from ${selectedCountryName}`;
 			} else {
-				countryPostsTitle.textContent = 'Posts by Country';
+				countryPostsTitle.textContent = 'Posts by Destination';
 			}
 		}
 
