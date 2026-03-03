@@ -62,15 +62,15 @@ Create a `.env` file in the project root.
 ### Frontend (used by Vite)
 
 ```env
-VITE_SUPABASE_URL=your_supabase_project_url
-VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+VITE_SUPABASE_URL=https://lqymnyqrxabraxjddoqk.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxxeW1ueXFyeGFicmF4amRkb3FrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIzOTU3NTQsImV4cCI6MjA4Nzk3MTc1NH0.xEXPee3h-Qw8Qz4F2Z9PqWo447t9bur7cW51w7oMCqw
 ```
 
 ### Seed script (used by `npm run seed`)
 
 ```env
-SUPABASE_URL=your_supabase_project_url
-SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+SUPABASE_URL=https://lqymnyqrxabraxjddoqk.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxxeW1ueXFyeGFicmF4amRkb3FrIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MjM5NTc1NCwiZXhwIjoyMDg3OTcxNzU0fQ.P3X-iz2SBSkJr41gqvU3YGcxg_vpVVzcmLJyllmWrwM
 ```
 
 > `SUPABASE_SERVICE_KEY` is also supported as an alternative name.
