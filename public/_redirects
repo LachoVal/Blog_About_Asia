@@ -10,8 +10,9 @@
 /favorites/ /favorites/index.html 200
 /posts /posts/index.html 200
 /posts/ /posts/index.html 200
-/posts/:id /posts/index.html?id=:id 200
-/posts/:id/ /posts/index.html?id=:id 200
+/posts/* /posts/index.html 200
+/posts/:id /posts/index.html 200
+/posts/:id/ /posts/index.html 200
 /post /post.html 200
 /destinations /destinations.html 200
 /country-articles /country-articles.html 200

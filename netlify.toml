@@ -63,13 +63,18 @@
   status = 200
 
 [[redirects]]
+  from = "/posts/*"
+  to = "/posts/index.html"
+  status = 200
+
+[[redirects]]
   from = "/posts/:id"
-  to = "/posts/index.html?id=:id"
+  to = "/posts/index.html"
   status = 200
 
 [[redirects]]
   from = "/posts/:id/"
-  to = "/posts/index.html?id=:id"
+  to = "/posts/index.html"
   status = 200
 
 [[redirects]]
