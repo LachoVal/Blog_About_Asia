@@ -23,6 +23,7 @@ const postContent = document.querySelector('#post-content');
 const favoriteButton = document.querySelector('#favorite-button');
 const favoriteIcon = document.querySelector('#favorite-icon');
 const favoriteLabel = document.querySelector('#favorite-label');
+const goToFavoritesButton = document.querySelector('#go-to-favorites-button');
 const favoriteMessage = document.querySelector('#favorite-message');
 
 const commentAuthNote = document.querySelector('#comment-auth-note');
@@ -189,7 +190,7 @@ async function loadCurrentUser() {
 async function fetchPostById(postId) {
   const { data, error } = await state.supabase
     .from('posts')
-    .select('id, title, content, image_url, created_at, author_id, country_id, profiles!posts_author_id_fkey(username), countries!posts_country_id_fkey(name)')
+    .select('id, title, content, image_url, created_at, author_id, country_id, is_approved, profiles!posts_author_id_fkey(username), countries!posts_country_id_fkey(name)')
     .eq('id', postId)
     .single();
 
@@ -202,6 +203,17 @@ async function fetchPostById(postId) {
 }
 
 function updateFavoriteButtonUI() {
+  const isPending = Boolean(state.post && state.post.is_approved === false);
+  if (isPending) {
+    favoriteButton.classList.add('d-none');
+    goToFavoritesButton?.classList.add('d-none');
+    clearTextMessage(favoriteMessage);
+    return;
+  }
+
+  favoriteButton.classList.remove('d-none');
+  goToFavoritesButton?.classList.remove('d-none');
+
   const isLoggedIn = Boolean(state.currentUser);
   const isFavorite = Boolean(state.favoriteId);
 
@@ -220,7 +232,7 @@ function updateFavoriteButtonUI() {
 }
 
 async function syncFavoriteState() {
-  if (!state.currentUser || !state.post?.id) {
+  if (!state.currentUser || !state.post?.id || state.post.is_approved === false) {
     state.favoriteId = null;
     updateFavoriteButtonUI();
     return;
@@ -244,6 +256,11 @@ async function syncFavoriteState() {
 }
 
 async function toggleFavorite() {
+  if (state.post?.is_approved === false) {
+    clearTextMessage(favoriteMessage);
+    return;
+  }
+
   if (!state.currentUser || !state.post?.id) {
     setTextMessage(favoriteMessage, 'Please log in to manage favorites.', 'warning');
     return;

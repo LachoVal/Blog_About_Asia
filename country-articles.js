@@ -39,7 +39,7 @@ function hideAlerts() {
 
 function setCountryContext(countryName) {
   const resolved = countryName || 'Selected Country';
-  title.textContent = `Articles from ${resolved}`;
+  title.textContent = `Posts about ${resolved}`;
   breadcrumbCurrent.textContent = resolved;
 }
 
@@ -53,7 +53,7 @@ function createPostCard(post, countryName) {
   const image = document.createElement('img');
   image.src = post.image_url || IMAGE_PLACEHOLDER;
   image.className = 'card-img-top';
-  image.alt = post.title || 'Article image';
+  image.alt = post.title || 'Post image';
   image.style.height = '240px';
   image.style.objectFit = 'cover';
 
@@ -66,12 +66,12 @@ function createPostCard(post, countryName) {
 
   const heading = document.createElement('h2');
   heading.className = 'h5 card-title';
-  heading.textContent = post.title || 'Untitled Article';
+  heading.textContent = post.title || 'Untitled Post';
 
   const button = document.createElement('a');
   button.className = 'btn btn-primary mt-auto';
   button.href = toPostRoute(post.id);
-  button.textContent = 'Read Article';
+  button.textContent = 'Read Post';
 
   body.append(badge, heading, button);
   card.append(image, body);
@@ -160,7 +160,7 @@ async function init() {
     renderPosts(posts, country.name);
   } catch (error) {
     hideLoading();
-    showMessage(error?.message || 'Failed to load country articles.');
+    showMessage(error?.message || 'Failed to load country posts.');
   }
 }
 

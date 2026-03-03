@@ -300,7 +300,8 @@ async function handleEditorSubmit(event) {
     const updatePayload = {
       title,
       content,
-      country_id: selectedCountryId
+      country_id: selectedCountryId,
+      is_approved: false
     };
 
     if (imageUrl) {
@@ -321,7 +322,7 @@ async function handleEditorSubmit(event) {
 
     await fetchMyPosts();
     state.editorModal.hide();
-    showMessage('Post updated successfully.', 'success');
+    showMessage('Post updated and sent for admin review.', 'success');
     postEditorSubmit.disabled = false;
     return;
   }

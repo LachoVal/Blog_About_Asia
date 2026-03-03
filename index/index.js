@@ -1,3 +1,4 @@
+import { Modal } from 'bootstrap';
 import { mountFooter } from '/src/components/footer/footer.js';
 import { mountHeader } from '/src/components/header/header.js';
 import { toPostRoute } from '/src/router/router.js';
@@ -23,7 +24,18 @@ const heroSeePostsButton = document.querySelector('#hero-see-posts-button');
 const countryPostsTitle = document.querySelector('#country-posts-title');
 const selectedCountryId = new URLSearchParams(window.location.search).get('country_id');
 
+const createPostModalElement = document.querySelector('#createPostModal');
+const homeCreatePostForm = document.querySelector('#home-create-post-form');
+const homeCreatePostSubmit = document.querySelector('#home-create-post-submit');
+const homeCreatePostMessage = document.querySelector('#home-create-post-message');
+const homePostTitle = document.querySelector('#home-post-title');
+const homePostContent = document.querySelector('#home-post-content');
+const homePostCountry = document.querySelector('#home-post-country');
+const homePostPhoto = document.querySelector('#home-post-photo');
+
 let allPosts = [];
+let currentUser = null;
+let homeCreatePostModal = null;
 
 function setHeroBackground() {
 	const heroSection = document.querySelector('.hero-section');
@@ -48,6 +60,43 @@ function hideElement(element) {
 	if (element) {
 		element.classList.add('d-none');
 	}
+}
+
+function setHomeCreatePostMessage(text, variant = 'secondary') {
+	homeCreatePostMessage.className = `small mt-3 mb-0 text-${variant}`;
+	homeCreatePostMessage.textContent = text;
+}
+
+function clearHomeCreatePostMessage() {
+	homeCreatePostMessage.className = 'small mt-3 mb-0';
+	homeCreatePostMessage.textContent = '';
+}
+
+function resetHomeCreatePostForm() {
+	homeCreatePostForm.reset();
+	clearHomeCreatePostMessage();
+}
+
+function populateHomeCountryOptions(countries) {
+	homePostCountry.innerHTML = '<option value="">Select a country</option>';
+
+	countries.forEach((country) => {
+		const option = document.createElement('option');
+		option.value = country.id;
+		option.textContent = country.name;
+		homePostCountry.appendChild(option);
+	});
+}
+
+function fileToDataUrl(file) {
+	return new Promise((resolve, reject) => {
+		const reader = new FileReader();
+		reader.onload = () => {
+			resolve(typeof reader.result === 'string' ? reader.result : null);
+		};
+		reader.onerror = () => reject(new Error('Unable to read selected file.'));
+		reader.readAsDataURL(file);
+	});
 }
 
 function normalizeCountryName(post) {
@@ -93,7 +142,7 @@ function createFeaturedSlide(post, index) {
 	const button = document.createElement('a');
 	button.className = 'btn btn-warning';
 	button.href = toPostRoute(post.id);
-	button.textContent = 'Read Article';
+	button.textContent = 'Read Post';
 
 	caption.append(heading, button);
 	slideBody.appendChild(caption);
@@ -228,6 +277,19 @@ async function fetchApprovedPosts(supabase, countryId = null) {
 	return data || [];
 }
 
+async function fetchCountries(supabase) {
+	const { data, error } = await supabase
+		.from('countries')
+		.select('id, name')
+		.order('name', { ascending: true });
+
+	if (error) {
+		throw new Error(error.message);
+	}
+
+	return data || [];
+}
+
 async function fetchCountryNameById(supabase, countryId) {
 	if (!countryId) {
 		return null;
@@ -250,10 +312,77 @@ async function ensureAuthenticated(supabase) {
 	const { data } = await supabase.auth.getSession();
 	if (!data?.session) {
 		window.location.replace('/login/index.html');
-		return false;
+		return null;
 	}
 
-	return true;
+	return data.session.user;
+}
+
+function wireHomeCreatePost(supabase) {
+	homeCreatePostModal = Modal.getOrCreateInstance(createPostModalElement);
+
+	createPostModalElement.addEventListener('hidden.bs.modal', () => {
+		homeCreatePostSubmit.disabled = false;
+		resetHomeCreatePostForm();
+	});
+
+	homeCreatePostForm.addEventListener('submit', async (event) => {
+		event.preventDefault();
+
+		const title = homePostTitle.value.trim();
+		const content = homePostContent.value.trim();
+		const countryId = homePostCountry.value;
+		const selectedFile = homePostPhoto.files?.[0] || null;
+
+		if (!title || !content) {
+			setHomeCreatePostMessage('Title and content are required.', 'danger');
+			return;
+		}
+
+		if (!countryId) {
+			setHomeCreatePostMessage('Please select a country.', 'danger');
+			return;
+		}
+
+		homeCreatePostSubmit.disabled = true;
+		setHomeCreatePostMessage('Creating post...', 'secondary');
+
+		let imageUrl = null;
+		if (selectedFile) {
+			try {
+				imageUrl = await fileToDataUrl(selectedFile);
+			} catch (error) {
+				homeCreatePostSubmit.disabled = false;
+				setHomeCreatePostMessage(error instanceof Error ? error.message : 'Unable to read selected file.', 'danger');
+				return;
+			}
+		}
+
+		const payload = {
+			title,
+			content,
+			country_id: countryId,
+			author_id: currentUser.id
+		};
+
+		if (imageUrl) {
+			payload.image_url = imageUrl;
+		}
+
+		const { error } = await supabase.from('posts').insert(payload);
+		if (error) {
+			homeCreatePostSubmit.disabled = false;
+			setHomeCreatePostMessage(error.message, 'danger');
+			return;
+		}
+
+		homeCreatePostSubmit.disabled = false;
+		setHomeCreatePostMessage('Post submitted successfully.', 'success');
+
+		window.setTimeout(() => {
+			homeCreatePostModal.hide();
+		}, 700);
+	});
 }
 
 async function initDashboard() {
@@ -271,19 +400,22 @@ async function initDashboard() {
 		return;
 	}
 
-	const isAuthenticated = await ensureAuthenticated(supabase);
-	if (!isAuthenticated) {
+	currentUser = await ensureAuthenticated(supabase);
+	if (!currentUser) {
 		return;
 	}
 
 	try {
-		const [featuredPosts, approvedPosts, selectedCountryName] = await Promise.all([
+		const [featuredPosts, approvedPosts, selectedCountryName, countries] = await Promise.all([
 			fetchFeaturedPosts(supabase),
 			fetchApprovedPosts(supabase, selectedCountryId),
-			fetchCountryNameById(supabase, selectedCountryId)
+			fetchCountryNameById(supabase, selectedCountryId),
+			fetchCountries(supabase)
 		]);
 
 		allPosts = approvedPosts;
+		populateHomeCountryOptions(countries);
+		wireHomeCreatePost(supabase);
 
 		if (selectedCountryId) {
 			if (selectedCountryName) {

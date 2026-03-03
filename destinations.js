@@ -63,7 +63,7 @@ function createCountryCard(country) {
   const button = document.createElement('a');
   button.className = 'btn btn-primary mt-auto';
   button.href = toCountryFilterHref(country.id);
-  button.textContent = 'See Articles';
+  button.textContent = 'See Posts';
 
   cardBody.append(title, description, button);
   card.append(imageLink, cardBody);

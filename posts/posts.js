@@ -24,6 +24,7 @@ const postContent = document.querySelector('#post-content');
 const favoriteButton = document.querySelector('#favorite-button');
 const favoriteIcon = document.querySelector('#favorite-icon');
 const favoriteLabel = document.querySelector('#favorite-label');
+const goToFavoritesButton = document.querySelector('#go-to-favorites-button');
 const favoriteMessage = document.querySelector('#favorite-message');
 
 const commentAuthNote = document.querySelector('#comment-auth-note');
@@ -204,7 +205,7 @@ async function loadCurrentUser() {
 async function fetchPostById(postId) {
   const { data, error } = await state.supabase
     .from('posts')
-    .select('id, title, content, image_url, created_at, author_id, country_id, profiles!posts_author_id_fkey(username), countries!posts_country_id_fkey(name)')
+    .select('id, title, content, image_url, created_at, author_id, country_id, is_approved, profiles!posts_author_id_fkey(username), countries!posts_country_id_fkey(name)')
     .eq('id', postId)
     .maybeSingle();
 
@@ -216,6 +217,17 @@ async function fetchPostById(postId) {
 }
 
 function updateFavoriteButtonUI() {
+  const isPending = Boolean(state.post && state.post.is_approved === false);
+  if (isPending) {
+    favoriteButton.classList.add('d-none');
+    goToFavoritesButton?.classList.add('d-none');
+    clearTextMessage(favoriteMessage);
+    return;
+  }
+
+  favoriteButton.classList.remove('d-none');
+  goToFavoritesButton?.classList.remove('d-none');
+
   const isLoggedIn = Boolean(state.currentUser);
   const isOwnPost = Boolean(state.currentUser && state.post && state.currentUser.id === state.post.author_id);
   const isFavorite = Boolean(state.favoriteId);
@@ -242,7 +254,7 @@ function updateFavoriteButtonUI() {
 }
 
 async function syncFavoriteState() {
-  if (!state.currentUser || !state.post?.id) {
+  if (!state.currentUser || !state.post?.id || state.post.is_approved === false) {
     state.favoriteId = null;
     updateFavoriteButtonUI();
     return;
@@ -266,6 +278,11 @@ async function syncFavoriteState() {
 }
 
 async function toggleFavorite() {
+  if (state.post?.is_approved === false) {
+    clearTextMessage(favoriteMessage);
+    return;
+  }
+
   if (!state.currentUser || !state.post?.id) {
     setTextMessage(favoriteMessage, 'Please log in to manage favorites.', 'warning');
     return;
@@ -313,7 +330,15 @@ async function toggleFavorite() {
   setTextMessage(favoriteMessage, 'Added to favorites.', 'success');
 }
 
-function canManageComment(comment) {
+function canEditComment(comment) {
+  if (!state.currentUser) {
+    return false;
+  }
+
+  return comment.user_id === state.currentUser.id;
+}
+
+function canDeleteComment(comment) {
   if (!state.currentUser) {
     return false;
   }
@@ -354,27 +379,34 @@ function createCommentElement(comment) {
   authorWrap.append(avatar, authorText);
   top.appendChild(authorWrap);
 
-  if (canManageComment(comment)) {
+  const canEdit = canEditComment(comment);
+  const canDelete = canDeleteComment(comment);
+
+  if (canEdit || canDelete) {
     const actions = document.createElement('div');
     actions.className = 'd-flex gap-2';
 
-    const editButton = document.createElement('button');
-    editButton.type = 'button';
-    editButton.className = 'btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1';
-    editButton.setAttribute('aria-label', 'Edit comment');
-    editButton.title = 'Edit comment';
-    editButton.innerHTML = '<span aria-hidden="true">✏️</span><span>Edit</span>';
-    editButton.addEventListener('click', () => openEditModal(comment.id, comment.content));
+    if (canEdit) {
+      const editButton = document.createElement('button');
+      editButton.type = 'button';
+      editButton.className = 'btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1';
+      editButton.setAttribute('aria-label', 'Edit comment');
+      editButton.title = 'Edit comment';
+      editButton.innerHTML = '<span aria-hidden="true">✏️</span><span>Edit</span>';
+      editButton.addEventListener('click', () => openEditModal(comment.id, comment.content));
+      actions.append(editButton);
+    }
 
-    const deleteButton = document.createElement('button');
-    deleteButton.type = 'button';
-    deleteButton.className = 'btn btn-sm btn-outline-danger d-inline-flex align-items-center gap-1';
-    deleteButton.setAttribute('aria-label', 'Delete comment');
-    deleteButton.title = 'Delete comment';
-    deleteButton.innerHTML = '<span aria-hidden="true">🗑️</span><span>Delete</span>';
-    deleteButton.addEventListener('click', () => handleDeleteComment(comment));
-
-    actions.append(editButton, deleteButton);
+    if (canDelete) {
+      const deleteButton = document.createElement('button');
+      deleteButton.type = 'button';
+      deleteButton.className = 'btn btn-sm btn-outline-danger d-inline-flex align-items-center gap-1';
+      deleteButton.setAttribute('aria-label', 'Delete comment');
+      deleteButton.title = 'Delete comment';
+      deleteButton.innerHTML = '<span aria-hidden="true">🗑️</span><span>Delete</span>';
+      deleteButton.addEventListener('click', () => handleDeleteComment(comment));
+      actions.append(deleteButton);
+    }
     top.appendChild(actions);
   }
 
@@ -463,7 +495,7 @@ async function handleEditComment(comment) {
 
 function openEditModal(commentId, currentText) {
   const comment = state.comments.find((item) => String(item.id) === String(commentId));
-  if (!comment || !canManageComment(comment)) {
+  if (!comment || !canEditComment(comment)) {
     showGlobalAlert('You are not allowed to edit this comment.', 'warning');
     return;
   }
@@ -499,6 +531,7 @@ function updateCommentTextInDOM(commentId, newText) {
 async function handleSaveEditedComment() {
   const commentId = editCommentIdInput.value;
   const newText = editCommentTextArea.value.trim();
+  const targetComment = state.comments.find((comment) => String(comment.id) === String(commentId));
 
   if (!commentId) {
     setEditModalMessage('No comment selected for editing.', 'warning');
@@ -507,6 +540,11 @@ async function handleSaveEditedComment() {
 
   if (!newText) {
     setEditModalMessage('Comment cannot be empty.', 'warning');
+    return;
+  }
+
+  if (!targetComment || !canEditComment(targetComment)) {
+    setEditModalMessage('You are not allowed to edit this comment.', 'danger');
     return;
   }
 
@@ -539,7 +577,7 @@ async function handleSaveEditedComment() {
 }
 
 async function handleDeleteComment(comment) {
-  if (!canManageComment(comment)) {
+  if (!canDeleteComment(comment)) {
     showGlobalAlert('You are not allowed to delete this comment.', 'warning');
     return;
   }

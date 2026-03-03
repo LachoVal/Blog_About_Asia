@@ -76,7 +76,7 @@ function createFavoriteCard(favorite) {
             <span class="badge text-bg-primary favorite-country-badge">${safeCountryName}</span>
           </div>
           <div class="d-flex flex-wrap gap-2">
-            <a class="btn btn-primary" href="/post.html?id=${post.id}">Read Article</a>
+            <a class="btn btn-primary" href="/post.html?id=${post.id}">Read Post</a>
             <button type="button" class="btn btn-danger js-remove-favorite" data-favorite-id="${favorite.id}">
               <i class="bi bi-heart-fill" aria-hidden="true"></i>
               <span class="ms-1">Remove</span>

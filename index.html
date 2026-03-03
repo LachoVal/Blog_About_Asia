@@ -17,10 +17,62 @@
             <p class="lead mb-4">
               Explore authentic travel stories, hidden gems, and cultural highlights from destinations across Asia.
             </p>
-            <a id="hero-see-posts-button" class="btn btn-warning btn-lg" href="#country-posts-title">See the posts</a>
+            <div class="d-flex gap-2 flex-wrap">
+              <a id="hero-see-posts-button" class="btn btn-warning btn-lg" href="#country-posts-title">See the posts</a>
+              <button
+                type="button"
+                class="btn btn-outline-light btn-lg"
+                data-bs-toggle="modal"
+                data-bs-target="#createPostModal"
+              >
+                Create a post
+              </button>
+            </div>
           </div>
         </div>
       </section>
+
+      <div class="modal fade" id="createPostModal" tabindex="-1" aria-labelledby="createPostModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="createPostModalLabel">Create Post</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="home-create-post-form">
+              <div class="modal-body">
+                <div class="mb-3">
+                  <label for="home-post-title" class="form-label">Title</label>
+                  <input id="home-post-title" type="text" class="form-control" required />
+                </div>
+
+                <div class="mb-3">
+                  <label for="home-post-content" class="form-label">Content</label>
+                  <textarea id="home-post-content" class="form-control" rows="5" required></textarea>
+                </div>
+
+                <div class="mb-3">
+                  <label for="home-post-country" class="form-label">Country</label>
+                  <select id="home-post-country" class="form-select" required>
+                    <option value="">Select a country</option>
+                  </select>
+                </div>
+
+                <div class="mb-1">
+                  <label for="home-post-photo" class="form-label">Photo Attachment</label>
+                  <input id="home-post-photo" type="file" class="form-control" accept="image/*" />
+                </div>
+
+                <p id="home-create-post-message" class="small mt-3 mb-0"></p>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button id="home-create-post-submit" type="submit" class="btn btn-primary">Create Post</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
 
       <section class="container mb-5" aria-labelledby="featured-posts-title">
         <div class="d-flex justify-content-between align-items-center mb-3">
