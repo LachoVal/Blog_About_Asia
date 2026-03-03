@@ -1,3 +1,136 @@
+:root {
+  --page-max-width: 1140px;
+}
+
+body {
+  background: linear-gradient(
+    180deg,
+    var(--bs-tertiary-bg) 0%,
+    var(--bs-body-bg) 220px,
+    var(--bs-body-bg) 100%
+  );
+  color: var(--bs-body-color);
+}
+
+main {
+  min-height: calc(100vh - 140px);
+}
+
+.container,
+.container-fluid,
+.container-lg,
+.container-md,
+.container-sm,
+.container-xl,
+.container-xxl {
+  max-width: var(--page-max-width);
+}
+
+.navbar {
+  backdrop-filter: blur(4px);
+}
+
+.navbar .navbar-brand {
+  letter-spacing: 0.02em;
+}
+
+.navbar .nav-link {
+  border-radius: 999px;
+  padding: 0.4rem 0.85rem;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.navbar .nav-link:hover,
+.navbar .nav-link:focus-visible {
+  background-color: var(--bs-secondary-bg);
+}
+
 .navbar .nav-link.active {
   font-weight: 600;
+  background-color: var(--bs-secondary-bg);
+}
+
+.card {
+  border-radius: 1rem;
+  border-color: var(--bs-border-color-translucent);
+}
+
+.card .card-img-top {
+  height: 240px;
+  object-fit: cover;
+}
+
+.btn {
+  border-radius: 0.75rem;
+}
+
+.form-control,
+.form-select {
+  border-radius: 0.75rem;
+}
+
+.table {
+  --bs-table-striped-bg: var(--bs-secondary-bg);
+}
+
+@keyframes uiDropIn {
+  from {
+    opacity: 0;
+    transform: translateY(-24px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes uiSlideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(-42px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes uiFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-drop-in {
+  animation: uiDropIn 0.8s ease-out both;
+}
+
+.animate-slide-in-right {
+  animation: uiSlideInRight 0.75s ease-out both;
+}
+
+.animate-fade-up {
+  animation: uiFadeUp 0.7s ease-out both;
+}
+
+@media (max-width: 991.98px) {
+  .navbar .nav-link {
+    border-radius: 0.65rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-drop-in,
+  .animate-slide-in-right,
+  .animate-fade-up {
+    animation: none;
+  }
 }

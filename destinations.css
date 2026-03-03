@@ -1,0 +1,37 @@
+main h1 {
+  letter-spacing: 0.01em;
+  animation: uiDropIn 0.75s ease-out both;
+}
+
+#destinationsGrid .card {
+  border: 1px solid var(--bs-border-color-translucent);
+}
+
+#destinationsGrid > .col {
+  animation: uiFadeUp 0.7s ease-out both;
+}
+
+#destinationsGrid > .col:nth-child(2) {
+  animation-delay: 0.08s;
+}
+
+#destinationsGrid > .col:nth-child(3) {
+  animation-delay: 0.16s;
+}
+
+#destinationsGrid .card-text {
+  line-height: 1.55;
+}
+
+#destinationsGrid .btn {
+  width: fit-content;
+  animation: uiSlideInRight 0.7s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  main h1,
+  #destinationsGrid > .col,
+  #destinationsGrid .btn {
+    animation: none;
+  }
+}

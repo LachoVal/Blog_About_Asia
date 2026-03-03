@@ -12,6 +12,7 @@
   border: 1px solid var(--bs-border-color);
   border-radius: 1rem;
   background-color: var(--bs-body-bg);
+  animation: uiDropIn 0.8s ease-out both;
 }
 
 .auth-title {
@@ -28,4 +29,16 @@
 
 .auth-card .btn {
   border-radius: 0.75rem;
+  animation: uiSlideInRight 0.75s ease-out both;
+}
+
+.auth-card .btn:nth-of-type(2) {
+  animation-delay: 0.1s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-card,
+  .auth-card .btn {
+    animation: none;
+  }
 }

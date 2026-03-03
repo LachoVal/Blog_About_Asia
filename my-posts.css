@@ -1,0 +1,41 @@
+.my-posts-top {
+  gap: 1rem;
+  animation: uiDropIn 0.75s ease-out both;
+}
+
+#my-posts-table-wrap {
+  border: 1px solid var(--bs-border-color-translucent);
+  border-radius: 1rem;
+  overflow: hidden;
+  background-color: var(--bs-body-bg);
+  animation: uiFadeUp 0.75s ease-out both;
+  animation-delay: 0.1s;
+}
+
+#my-posts-table-wrap .table {
+  margin-bottom: 0;
+}
+
+#create-post-button {
+  animation: uiSlideInRight 0.75s ease-out both;
+  animation-delay: 0.2s;
+}
+
+@media (max-width: 575.98px) {
+  .my-posts-top {
+    flex-direction: column;
+    align-items: stretch !important;
+  }
+
+  #create-post-button {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .my-posts-top,
+  #my-posts-table-wrap,
+  #create-post-button {
+    animation: none;
+  }
+}

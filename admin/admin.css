@@ -1,3 +1,35 @@
-main {
-  min-height: calc(100vh - 140px);
+#admin-dashboard h1 {
+  letter-spacing: 0.01em;
+  animation: uiDropIn 0.75s ease-out both;
+}
+
+#adminTabs {
+  gap: 0.25rem;
+  border-bottom-width: 0;
+  animation: uiSlideInRight 0.75s ease-out both;
+  animation-delay: 0.08s;
+}
+
+#adminTabs .nav-link {
+  border-radius: 0.75rem 0.75rem 0 0;
+}
+
+#adminTabsContent {
+  border-color: var(--bs-border-color-translucent) !important;
+  background-color: var(--bs-body-bg);
+  animation: uiFadeUp 0.75s ease-out both;
+  animation-delay: 0.16s;
+}
+
+#pending-posts-table-wrap .table,
+#countries-table-wrap .table {
+  margin-bottom: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #admin-dashboard h1,
+  #adminTabs,
+  #adminTabsContent {
+    animation: none;
+  }
 }

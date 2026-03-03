@@ -1,0 +1,44 @@
+#post-view {
+  max-width: 900px;
+  margin-inline: auto;
+  animation: uiDropIn 0.8s ease-out both;
+}
+
+#post-title {
+  line-height: 1.2;
+}
+
+#post-content {
+  font-size: 1.05rem;
+}
+
+#post-content p {
+  margin-bottom: 1rem;
+}
+
+#comments-list .card {
+  border: 1px solid var(--bs-border-color-translucent);
+  animation: uiFadeUp 0.7s ease-out both;
+}
+
+#favorite-button,
+#comment-submit,
+#go-to-favorites-button {
+  animation: uiSlideInRight 0.75s ease-out both;
+}
+
+@media (max-width: 767.98px) {
+  #post-content {
+    font-size: 1rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #post-view,
+  #comments-list .card,
+  #favorite-button,
+  #comment-submit,
+  #go-to-favorites-button {
+    animation: none;
+  }
+}
