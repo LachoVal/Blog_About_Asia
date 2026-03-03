@@ -21,6 +21,7 @@ const postsLoading = document.querySelector('#posts-loading');
 const postsContainer = document.querySelector('#postsContainer');
 const heroSeePostsButton = document.querySelector('#hero-see-posts-button');
 const countryPostsTitle = document.querySelector('#country-posts-title');
+const selectedCountryId = new URLSearchParams(window.location.search).get('country_id');
 
 let allPosts = [];
 
@@ -175,6 +176,23 @@ function renderPosts(postsArray) {
 	});
 }
 
+function filterPostsByCountryAndSearch(postsArray, searchTerm = '') {
+	let filteredPosts = postsArray;
+
+	if (selectedCountryId) {
+		filteredPosts = filteredPosts.filter((post) => String(post.country_id) === String(selectedCountryId));
+	}
+
+	if (!searchTerm) {
+		return filteredPosts;
+	}
+
+	return filteredPosts.filter((post) => {
+		const countryName = normalizeCountryName(post).toLowerCase();
+		return countryName.includes(searchTerm);
+	});
+}
+
 async function fetchFeaturedPosts(supabase) {
 	const { data, error } = await supabase
 		.from('posts')
@@ -190,18 +208,42 @@ async function fetchFeaturedPosts(supabase) {
 	return data || [];
 }
 
-async function fetchApprovedPosts(supabase) {
-	const { data, error } = await supabase
+async function fetchApprovedPosts(supabase, countryId = null) {
+	let query = supabase
 		.from('posts')
 		.select('id, title, image_url, country_id, created_at, countries(name)')
 		.eq('is_approved', true)
 		.order('created_at', { ascending: false });
+
+	if (countryId) {
+		query = query.eq('country_id', countryId);
+	}
+
+	const { data, error } = await query;
 
 	if (error) {
 		throw new Error(error.message);
 	}
 
 	return data || [];
+}
+
+async function fetchCountryNameById(supabase, countryId) {
+	if (!countryId) {
+		return null;
+	}
+
+	const { data, error } = await supabase
+		.from('countries')
+		.select('name')
+		.eq('id', countryId)
+		.maybeSingle();
+
+	if (error) {
+		throw new Error(error.message);
+	}
+
+	return data?.name || null;
 }
 
 async function ensureAuthenticated(supabase) {
@@ -235,25 +277,31 @@ async function initDashboard() {
 	}
 
 	try {
-		const [featuredPosts, approvedPosts] = await Promise.all([
+		const [featuredPosts, approvedPosts, selectedCountryName] = await Promise.all([
 			fetchFeaturedPosts(supabase),
-			fetchApprovedPosts(supabase)
+			fetchApprovedPosts(supabase, selectedCountryId),
+			fetchCountryNameById(supabase, selectedCountryId)
 		]);
 
 		allPosts = approvedPosts;
+
+		if (selectedCountryId) {
+			if (selectedCountryName) {
+				countryPostsTitle.textContent = `Posts from ${selectedCountryName}`;
+			} else {
+				countryPostsTitle.textContent = 'Posts by Country';
+			}
+		}
 
 		hideElement(featuredLoading);
 		renderFeaturedPosts(featuredPosts);
 
 		hideElement(postsLoading);
-		renderPosts(allPosts);
+		renderPosts(filterPostsByCountryAndSearch(allPosts));
 
 		countrySearch?.addEventListener('input', (event) => {
 			const searchTerm = event.target.value.toLowerCase();
-			const filteredArray = allPosts.filter((post) => {
-				const countryName = normalizeCountryName(post).toLowerCase();
-				return countryName.includes(searchTerm);
-			});
+			const filteredArray = filterPostsByCountryAndSearch(allPosts, searchTerm);
 
 			renderPosts(filteredArray);
 		});

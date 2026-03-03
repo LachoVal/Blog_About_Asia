@@ -88,6 +88,8 @@ export default defineConfig({
       input: {
         home: resolve(__dirname, 'index.html'),
         post: resolve(__dirname, 'post.html'),
+        destinations: resolve(__dirname, 'destinations.html'),
+        countryArticles: resolve(__dirname, 'country-articles.html'),
         login: resolve(__dirname, 'login/index.html'),
         register: resolve(__dirname, 'register/index.html'),
         admin: resolve(__dirname, 'admin/index.html'),
