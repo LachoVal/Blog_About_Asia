@@ -60,6 +60,43 @@ function clearCountryFormMessage() {
   countryFormMessage.textContent = '';
 }
 
+function normalizeCountryName(value) {
+  return String(value || '').trim().toLowerCase();
+}
+
+function isDuplicateCountryName(name, excludeCountryId = null) {
+  const normalized = normalizeCountryName(name);
+  if (!normalized) {
+    return false;
+  }
+
+  return state.countries.some((country) => {
+    if (excludeCountryId && String(country.id) === String(excludeCountryId)) {
+      return false;
+    }
+
+    return normalizeCountryName(country.name) === normalized;
+  });
+}
+
+function toSafeImageUrl(value) {
+  const raw = String(value || '').trim();
+  if (!raw) {
+    return null;
+  }
+
+  try {
+    const parsed = new URL(raw);
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      return { error: 'Image URL must start with http:// or https://.' };
+    }
+
+    return { value: parsed.toString() };
+  } catch {
+    return { error: 'Please provide a valid image URL.' };
+  }
+}
+
 function escapeHtml(value) {
   return String(value ?? '')
     .replaceAll('&', '&amp;')
@@ -343,61 +380,71 @@ async function handleCountryFormSubmit(event) {
   const name = countryNameInput.value.trim();
   const description = countryDescriptionInput.value.trim();
   const imageUrl = countryImageUrlInput.value.trim();
+  const isEditMode = state.countryMode === 'edit';
+  const countryId = countryIdInput.value;
 
   if (!name) {
     setCountryFormMessage('Country name is required.', 'danger');
     return;
   }
 
+  if (isDuplicateCountryName(name, isEditMode ? countryId : null)) {
+    setCountryFormMessage('A country with this name already exists.', 'danger');
+    return;
+  }
+
+  const parsedImage = toSafeImageUrl(imageUrl);
+  if (parsedImage?.error) {
+    setCountryFormMessage(parsedImage.error, 'danger');
+    return;
+  }
+
   countryFormSubmit.disabled = true;
-  setCountryFormMessage(state.countryMode === 'edit' ? 'Saving changes...' : 'Creating country...', 'secondary');
+  setCountryFormMessage(isEditMode ? 'Saving changes...' : 'Creating country...', 'secondary');
 
   const payload = {
     name,
     description: description || null,
-    image_url: imageUrl || null
+    image_url: parsedImage?.value ?? null
   };
 
-  if (state.countryMode === 'edit') {
-    const countryId = countryIdInput.value;
-    const { data, error } = await state.supabase
-      .from('countries')
-      .update(payload)
-      .eq('id', countryId)
-      .select('id, name, description, image_url')
-      .maybeSingle();
+  try {
+    if (isEditMode) {
+      const { data, error } = await state.supabase
+        .from('countries')
+        .update(payload)
+        .eq('id', countryId)
+        .select('id, name, description, image_url')
+        .maybeSingle();
 
-    if (error || !data) {
-      countryFormSubmit.disabled = false;
-      setCountryFormMessage(error?.message || 'Unable to update country.', 'danger');
-      return;
-    }
-
-    state.countries = state.countries.map((country) => {
-      if (String(country.id) !== String(countryId)) {
-        return country;
+      if (error || !data) {
+        setCountryFormMessage(error?.message || 'Unable to update country.', 'danger');
+        return;
       }
 
-      return data;
-    });
+      state.countries = state.countries.map((country) => {
+        if (String(country.id) !== String(countryId)) {
+          return country;
+        }
 
-    renderCountries();
-    state.countryModal.hide();
-    hideAlert(countriesMessage);
-  } else {
-    const { data, error } = await state.supabase
-      .from('countries')
-      .insert(payload)
-      .select('id, name, description, image_url')
-      .maybeSingle();
+        return data;
+      });
+    } else {
+      const { data, error } = await state.supabase
+        .from('countries')
+        .insert(payload)
+        .select('id, name, description, image_url')
+        .maybeSingle();
 
-    if (error || !data) {
-      countryFormSubmit.disabled = false;
-      setCountryFormMessage(error?.message || 'Unable to create country.', 'danger');
-      return;
+      if (error || !data) {
+        setCountryFormMessage(error?.message || 'Unable to create country.', 'danger');
+        return;
+      }
+
+      state.countries = [data, ...state.countries];
     }
 
-    state.countries = [data, ...state.countries].sort((a, b) => {
+    state.countries.sort((a, b) => {
       const aName = (a.name || '').toLowerCase();
       const bName = (b.name || '').toLowerCase();
       return aName.localeCompare(bName);
@@ -406,10 +453,9 @@ async function handleCountryFormSubmit(event) {
     renderCountries();
     state.countryModal.hide();
     hideAlert(countriesMessage);
+  } finally {
+    countryFormSubmit.disabled = false;
   }
-
-  countryFormSubmit.disabled = false;
-  clearCountryFormMessage();
 }
 
 function wireEvents() {
