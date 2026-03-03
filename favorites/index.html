@@ -4,14 +4,27 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Favorites | Asian Travel Blog</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+    />
     <link rel="stylesheet" href="/favorites/favorites.css" />
   </head>
   <body>
     <div id="app-header"></div>
 
     <main class="container py-5">
-      <h1 class="mb-4">Favorite Posts</h1>
-      <div id="favorites-list" class="list-group"></div>
+      <h1 class="mb-4">My Favorite Posts</h1>
+
+      <div id="favorites-message" class="alert alert-danger d-none" role="alert"></div>
+
+      <section id="favorites-empty" class="favorites-empty text-center p-5 rounded-4 border d-none" aria-live="polite">
+        <h2 class="h4 mb-2">You haven't saved any posts yet.</h2>
+        <p class="text-body-secondary mb-4">Start exploring and save the destinations you love most.</p>
+        <a class="btn btn-primary" href="/index.html">Explore Asia</a>
+      </section>
+
+      <section id="favorites-list" aria-label="Favorite destinations"></section>
     </main>
 
     <div id="app-footer"></div>
