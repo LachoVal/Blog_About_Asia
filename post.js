@@ -320,11 +320,7 @@ function canCurrentUserPostComment() {
     return false;
   }
 
-  if (state.isAdmin) {
-    return state.post.is_approved === true;
-  }
-
-  return true;
+  return state.post.is_approved === true;
 }
 
 function canCurrentUserViewComments() {
@@ -332,7 +328,12 @@ function canCurrentUserViewComments() {
     return false;
   }
 
-  return !(state.isAdmin && state.post.is_approved === false);
+  if (state.post.is_approved !== false) {
+    return true;
+  }
+
+  const isPostCreator = Boolean(state.currentUser && state.currentUser.id === state.post.author_id);
+  return !(state.isAdmin || isPostCreator);
 }
 
 function createCommentElement(comment) {
@@ -423,7 +424,7 @@ async function fetchComments() {
     commentsLoading.classList.add('d-none');
     commentsList.innerHTML = '';
     state.comments = [];
-    commentsEmpty.textContent = 'Comments are unavailable for admins on pending posts.';
+    commentsEmpty.textContent = 'Comments are unavailable while this post is pending review.';
     commentsEmpty.classList.remove('d-none');
     return;
   }
@@ -457,8 +458,8 @@ async function handleAddComment(event) {
   }
 
   if (!canCurrentUserPostComment()) {
-    const warningMessage = state.isAdmin && state.post?.is_approved === false
-      ? 'Admins cannot comment on pending posts.'
+    const warningMessage = state.post?.is_approved === false
+      ? 'Comments are disabled until this post is published.'
       : 'You are not allowed to comment on this post.';
     setTextMessage(commentFormMessage, warningMessage, 'warning');
     return;
@@ -615,8 +616,8 @@ function setupAuthDependentUI() {
   if (!state.currentUser) {
     commentAuthNote.textContent = 'Please log in to post comments.';
     commentAuthNote.classList.remove('d-none');
-  } else if (state.isAdmin && state.post?.is_approved === false) {
-    commentAuthNote.textContent = 'Admins cannot comment on pending posts.';
+  } else if (state.post?.is_approved === false) {
+    commentAuthNote.textContent = 'Comments are disabled until this post is published.';
     commentAuthNote.classList.remove('d-none');
   } else {
     commentAuthNote.classList.add('d-none');
