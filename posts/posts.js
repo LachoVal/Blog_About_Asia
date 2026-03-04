@@ -351,11 +351,19 @@ function canCurrentUserPostComment() {
     return false;
   }
 
-  if (!state.isAdmin) {
-    return true;
+  if (state.isAdmin) {
+    return state.post.is_approved === true;
   }
 
-  return state.post.author_id === state.currentUser.id;
+  return true;
+}
+
+function canCurrentUserViewComments() {
+  if (!state.post) {
+    return false;
+  }
+
+  return !(state.isAdmin && state.post.is_approved === false);
 }
 
 function createCommentElement(comment) {
@@ -447,6 +455,16 @@ function renderComments() {
 }
 
 async function fetchComments() {
+  if (!canCurrentUserViewComments()) {
+    commentsLoading.classList.add('d-none');
+    commentsList.innerHTML = '';
+    state.comments = [];
+    commentsEmpty.textContent = 'Comments are unavailable for admins on pending posts.';
+    commentsEmpty.classList.remove('d-none');
+    return;
+  }
+
+  commentsEmpty.textContent = 'No comments yet. Be the first to comment.';
   commentsLoading.classList.remove('d-none');
   commentsEmpty.classList.add('d-none');
 
@@ -475,7 +493,10 @@ async function handleAddComment(event) {
   }
 
   if (!canCurrentUserPostComment()) {
-    setTextMessage(commentFormMessage, 'Admins cannot comment on posts written by other users.', 'warning');
+    const warningMessage = state.isAdmin && state.post?.is_approved === false
+      ? 'Admins cannot comment on pending posts.'
+      : 'You are not allowed to comment on this post.';
+    setTextMessage(commentFormMessage, warningMessage, 'warning');
     return;
   }
 
@@ -628,8 +649,8 @@ function setupAuthDependentUI() {
   if (!state.currentUser) {
     commentAuthNote.textContent = 'Please log in to post comments.';
     commentAuthNote.classList.remove('d-none');
-  } else if (state.isAdmin) {
-    commentAuthNote.textContent = 'Admins cannot comment on posts written by other users.';
+  } else if (state.isAdmin && state.post?.is_approved === false) {
+    commentAuthNote.textContent = 'Admins cannot comment on pending posts.';
     commentAuthNote.classList.remove('d-none');
   } else {
     commentAuthNote.classList.add('d-none');
@@ -669,6 +690,7 @@ async function init() {
 
     state.post = post;
     renderPost(post);
+    setupAuthDependentUI();
 
     await syncFavoriteState();
     await fetchComments();
