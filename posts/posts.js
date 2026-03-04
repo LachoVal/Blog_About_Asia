@@ -346,6 +346,18 @@ function canDeleteComment(comment) {
   return comment.user_id === state.currentUser.id || state.isAdmin;
 }
 
+function canCurrentUserPostComment() {
+  if (!state.currentUser || !state.post) {
+    return false;
+  }
+
+  if (!state.isAdmin) {
+    return true;
+  }
+
+  return state.post.author_id === state.currentUser.id;
+}
+
 function createCommentElement(comment) {
   const card = document.createElement('article');
   card.className = 'card border-0 shadow-sm';
@@ -459,6 +471,11 @@ async function handleAddComment(event) {
 
   if (!state.currentUser) {
     setTextMessage(commentFormMessage, 'Please log in to post comments.', 'warning');
+    return;
+  }
+
+  if (!canCurrentUserPostComment()) {
+    setTextMessage(commentFormMessage, 'Admins cannot comment on posts written by other users.', 'warning');
     return;
   }
 
@@ -599,12 +616,23 @@ async function handleDeleteComment(comment) {
 }
 
 function setupAuthDependentUI() {
-  if (state.currentUser) {
+  if (canCurrentUserPostComment()) {
     commentAuthNote.classList.add('d-none');
     commentForm.classList.remove('d-none');
-  } else {
+    clearTextMessage(commentFormMessage);
+    return;
+  }
+
+  commentForm.classList.add('d-none');
+
+  if (!state.currentUser) {
+    commentAuthNote.textContent = 'Please log in to post comments.';
     commentAuthNote.classList.remove('d-none');
-    commentForm.classList.add('d-none');
+  } else if (state.isAdmin) {
+    commentAuthNote.textContent = 'Admins cannot comment on posts written by other users.';
+    commentAuthNote.classList.remove('d-none');
+  } else {
+    commentAuthNote.classList.add('d-none');
   }
 
   updateFavoriteButtonUI();
