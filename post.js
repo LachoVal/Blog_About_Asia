@@ -216,7 +216,9 @@ function updateFavoriteButtonUI() {
   goToFavoritesButton?.classList.remove('d-none');
 
   const isLoggedIn = Boolean(state.currentUser);
+  const isOwnPost = Boolean(state.currentUser && state.post && state.currentUser.id === state.post.author_id);
   const isFavorite = Boolean(state.favoriteId);
+  favoriteButton.classList.toggle('d-none', isOwnPost);
 
   favoriteButton.disabled = !isLoggedIn;
 
@@ -226,6 +228,13 @@ function updateFavoriteButtonUI() {
     favoriteLabel.textContent = 'Login to Add Favorite';
     return;
   }
+
+  if (isOwnPost) {
+    clearTextMessage(favoriteMessage);
+    return;
+  }
+
+  favoriteButton.classList.remove('d-none');
 
   favoriteButton.className = isFavorite ? 'btn btn-danger btn-lg' : 'btn btn-outline-danger btn-lg';
   favoriteIcon.textContent = isFavorite ? '♥' : '♡';
@@ -264,6 +273,12 @@ async function toggleFavorite() {
 
   if (!state.currentUser || !state.post?.id) {
     setTextMessage(favoriteMessage, 'Please log in to manage favorites.', 'warning');
+    return;
+  }
+
+  if (state.currentUser.id === state.post.author_id) {
+    clearTextMessage(favoriteMessage);
+    updateFavoriteButtonUI();
     return;
   }
 
