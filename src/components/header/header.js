@@ -1,6 +1,6 @@
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
-import { Modal } from 'bootstrap';
+import { Collapse, Modal } from 'bootstrap';
 
 import headerTemplate from './header.html?raw';
 import './header.css';
@@ -74,13 +74,24 @@ function setAvatarFeedback(target, message, type = 'muted') {
   feedbackElement.textContent = message;
 }
 
+function setAvatarActionState(saveAvatarBtn, clearAvatarBtn, isDisabled) {
+  if (saveAvatarBtn) {
+    saveAvatarBtn.disabled = isDisabled;
+  }
+
+  if (clearAvatarBtn) {
+    clearAvatarBtn.disabled = isDisabled;
+  }
+}
+
 function setupAvatarUpload(target) {
   const saveAvatarBtn = target.querySelector('#saveAvatarBtn');
+  const clearAvatarBtn = target.querySelector('#clearAvatarBtn');
   const avatarInput = target.querySelector('#avatarInput');
   const profileModalElement = target.querySelector('#profileModal');
   const navAvatar = target.querySelector('#navAvatar');
 
-  if (!saveAvatarBtn || !avatarInput || !profileModalElement || !navAvatar) {
+  if (!saveAvatarBtn || !clearAvatarBtn || !avatarInput || !profileModalElement || !navAvatar) {
     return;
   }
 
@@ -97,6 +108,46 @@ function setupAvatarUpload(target) {
   profileModalElement.addEventListener('show.bs.modal', () => {
     avatarInput.value = '';
     setAvatarFeedback(target, '');
+  });
+
+  clearAvatarBtn.addEventListener('click', async () => {
+    const supabase = requireSupabase();
+    if (!supabase) {
+      setAvatarFeedback(target, 'Supabase is not configured.', 'danger');
+      return;
+    }
+
+    const { data: sessionData } = await supabase.auth.getSession();
+    const currentUser = sessionData?.session?.user;
+    if (!currentUser) {
+      setAvatarFeedback(target, 'You must be logged in to clear an avatar.', 'danger');
+      return;
+    }
+
+    setAvatarActionState(saveAvatarBtn, clearAvatarBtn, true);
+    setAvatarFeedback(target, 'Clearing avatar...', 'secondary');
+
+    try {
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: null })
+        .eq('id', currentUser.id);
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      navAvatar.src = DEFAULT_AVATAR_URL;
+      avatarInput.value = '';
+      setAvatarFeedback(target, 'Avatar cleared successfully.', 'success');
+
+      profileModalInstance.hide();
+      window.alert('Avatar cleared successfully.');
+    } catch (error) {
+      setAvatarFeedback(target, error?.message || 'Failed to clear avatar.', 'danger');
+    } finally {
+      setAvatarActionState(saveAvatarBtn, clearAvatarBtn, false);
+    }
   });
 
   saveAvatarBtn.addEventListener('click', async () => {
@@ -119,7 +170,7 @@ function setupAvatarUpload(target) {
       return;
     }
 
-    saveAvatarBtn.disabled = true;
+    setAvatarActionState(saveAvatarBtn, clearAvatarBtn, true);
     setAvatarFeedback(target, 'Uploading avatar...', 'secondary');
 
     try {
@@ -169,8 +220,33 @@ function setupAvatarUpload(target) {
         setAvatarFeedback(target, errorMessage, 'danger');
       }
     } finally {
-      saveAvatarBtn.disabled = false;
+      setAvatarActionState(saveAvatarBtn, clearAvatarBtn, false);
     }
+  });
+}
+
+function setupNavbarToggle(target) {
+  const navbarToggleButton = target.querySelector('.navbar-toggler');
+  const navbarCollapseElement = target.querySelector('#mainNavigation');
+
+  if (!navbarToggleButton || !navbarCollapseElement) {
+    return;
+  }
+
+  const collapseInstance = Collapse.getOrCreateInstance(navbarCollapseElement, {
+    toggle: false,
+  });
+
+  navbarToggleButton.addEventListener('click', () => {
+    collapseInstance.toggle();
+  });
+
+  navbarCollapseElement.addEventListener('shown.bs.collapse', () => {
+    navbarToggleButton.setAttribute('aria-expanded', 'true');
+  });
+
+  navbarCollapseElement.addEventListener('hidden.bs.collapse', () => {
+    navbarToggleButton.setAttribute('aria-expanded', 'false');
   });
 }
 
@@ -183,6 +259,7 @@ export function mountHeader(targetSelector, currentRoute) {
   redirectGuestFromProtectedPage();
 
   target.innerHTML = headerTemplate;
+  setupNavbarToggle(target);
   const links = target.querySelectorAll('[data-route]');
   const routeToUse = currentRoute || getCurrentRouteBase();
 
