@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Change Password | Asian Travel Blog</title>
+    <link rel="stylesheet" href="/change-password/change-password.css" />
+  </head>
+  <body>
+    <div id="app-header"></div>
+
+    <main class="auth-page py-4 py-md-5">
+      <div class="container auth-window d-flex align-items-center justify-content-center">
+        <section class="auth-card p-4 p-md-5 shadow-sm">
+          <h1 class="auth-title mb-2 text-center">Change Password</h1>
+          <p class="auth-subtitle text-body-secondary text-center mb-4">Update your password to keep your account secure.</p>
+
+          <form id="change-password-form" class="row g-3">
+            <div class="col-12">
+              <label for="new-password" class="form-label">New Password</label>
+              <input id="new-password" name="new-password" type="password" class="form-control form-control-lg" autocomplete="new-password" required />
+              <small class="form-text text-body-secondary">At least 6 characters</small>
+            </div>
+            <div class="col-12">
+              <label for="confirm-password" class="form-label">Confirm New Password</label>
+              <input id="confirm-password" name="confirm-password" type="password" class="form-control form-control-lg" autocomplete="new-password" required />
+            </div>
+            <div class="col-12 d-grid gap-2 mt-2">
+              <button class="btn btn-primary btn-lg" type="submit">Update Password</button>
+              <a class="btn btn-outline-secondary" href="/">Back to Home</a>
+            </div>
+          </form>
+
+          <p id="change-password-message" class="mt-3 mb-0 text-center"></p>
+        </section>
+      </div>
+    </main>
+
+    <div id="app-footer"></div>
+
+    <script type="module" src="/change-password/change-password.js"></script>
+  </body>
+</html>

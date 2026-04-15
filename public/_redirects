@@ -2,6 +2,8 @@
 /login/ /login/index.html 200
 /register /register/index.html 200
 /register/ /register/index.html 200
+/change-password /change-password/index.html 200
+/change-password/ /change-password/index.html 200
 /admin /admin/index.html 200
 /admin/ /admin/index.html 200
 /create-post /create-post/index.html 200

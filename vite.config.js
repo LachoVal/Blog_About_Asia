@@ -33,6 +33,10 @@ function rewriteAuthPath(urlValue) {
     return `/register/index.html${suffix}`;
   }
 
+  if (url.pathname === '/change-password' || url.pathname === '/change-password/') {
+    return `/change-password/index.html${suffix}`;
+  }
+
   if (url.pathname === '/admin' || url.pathname === '/admin/') {
     return `/admin/index.html${suffix}`;
   }
@@ -97,6 +101,7 @@ export default defineConfig({
         countryArticles: resolve(__dirname, 'country-articles.html'),
         login: resolve(__dirname, 'login/index.html'),
         register: resolve(__dirname, 'register/index.html'),
+        changePassword: resolve(__dirname, 'change-password/index.html'),
         admin: resolve(__dirname, 'admin/index.html'),
         myPosts: resolve(__dirname, 'my-posts.html'),
         posts: resolve(__dirname, 'posts/index.html'),

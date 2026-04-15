@@ -2,6 +2,7 @@ export const ROUTES = {
   HOME: '/',
   LOGIN: '/login',
   REGISTER: '/register',
+  CHANGE_PASSWORD: '/change-password',
   ADMIN: '/admin',
   POSTS: '/posts/{id}',
   CREATE_POST: '/create-post',
@@ -47,6 +48,10 @@ export function matchRoute(pathname = getCurrentPathname()) {
 
   if (normalized === ROUTES.REGISTER) {
     return { key: 'REGISTER', pattern: ROUTES.REGISTER, params: {} };
+  }
+
+  if (normalized === ROUTES.CHANGE_PASSWORD) {
+    return { key: 'CHANGE_PASSWORD', pattern: ROUTES.CHANGE_PASSWORD, params: {} };
   }
 
   if (normalized === ROUTES.ADMIN) {
