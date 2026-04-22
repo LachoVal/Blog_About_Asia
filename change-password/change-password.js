@@ -38,8 +38,15 @@ form.addEventListener('submit', async (event) => {
   }
 
   const formData = new FormData(form);
+  const oldPassword = String(formData.get('old-password') || '');
   const newPassword = String(formData.get('new-password') || '').trim();
   const confirmPassword = String(formData.get('confirm-password') || '').trim();
+
+  if (!oldPassword) {
+    message.className = 'mt-3 mb-0 text-danger';
+    message.textContent = 'Please enter your old password.';
+    return;
+  }
 
   // Validate passwords match
   if (newPassword !== confirmPassword) {
@@ -52,6 +59,33 @@ form.addEventListener('submit', async (event) => {
   if (newPassword.length < 6) {
     message.className = 'mt-3 mb-0 text-danger';
     message.textContent = 'Password must be at least 6 characters long.';
+    return;
+  }
+
+  if (oldPassword === newPassword) {
+    message.className = 'mt-3 mb-0 text-danger';
+    message.textContent = 'New password must be different from old password.';
+    return;
+  }
+
+  const { data: sessionData } = await supabase.auth.getSession();
+  const sessionUser = sessionData?.session?.user;
+  const userEmail = sessionUser?.email;
+
+  if (!sessionUser || !userEmail) {
+    window.location.replace('/login/index.html');
+    return;
+  }
+
+  // Re-authenticate with old password before allowing password change.
+  const { error: verifyError } = await supabase.auth.signInWithPassword({
+    email: userEmail,
+    password: oldPassword,
+  });
+
+  if (verifyError) {
+    message.className = 'mt-3 mb-0 text-danger';
+    message.textContent = 'Old password is incorrect.';
     return;
   }
 
