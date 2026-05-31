@@ -3,26 +3,32 @@ main h1 {
   animation: uiDropIn 0.75s ease-out both;
 }
 
+#countries-container .card,
 #destinationsGrid .card {
   border: 1px solid var(--bs-border-color-translucent);
 }
 
+#countries-container > .col,
 #destinationsGrid > .col {
   animation: uiFadeUp 0.7s ease-out both;
 }
 
+#countries-container > .col:nth-child(2),
 #destinationsGrid > .col:nth-child(2) {
   animation-delay: 0.08s;
 }
 
+#countries-container > .col:nth-child(3),
 #destinationsGrid > .col:nth-child(3) {
   animation-delay: 0.16s;
 }
 
+#countries-container .card-text,
 #destinationsGrid .card-text {
   line-height: 1.55;
 }
 
+#countries-container .btn,
 #destinationsGrid .btn {
   width: fit-content;
   animation: uiSlideInRight 0.7s ease-out both;

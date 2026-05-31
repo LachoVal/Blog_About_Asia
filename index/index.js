@@ -4,6 +4,7 @@ import { mountHeader } from '/src/components/header/header.js';
 import { toPostRoute } from '/src/router/router.js';
 import { requireSupabase } from '/src/lib/supabaseClient.js';
 import { getLoginPath } from '/src/lib/auth.js';
+import { translate } from '/src/lib/i18n.js';
 
 mountHeader('#app-header');
 mountFooter('#app-footer');
@@ -33,10 +34,41 @@ const homePostTitle = document.querySelector('#home-post-title');
 const homePostContent = document.querySelector('#home-post-content');
 const homePostCountry = document.querySelector('#home-post-country');
 const homePostPhoto = document.querySelector('#home-post-photo');
+const homePostPhotoBrowse = document.querySelector('#home-post-photo-browse');
+const homePostPhotoName = document.querySelector('#home-post-photo-name');
 
 let allPosts = [];
 let currentUser = null;
 let homeCreatePostModal = null;
+let featuredPostsCache = [];
+let selectedCountryRecord = null;
+let countriesCache = [];
+let homeEventsWired = false;
+let languageChangeListenerWired = false;
+
+function updateHomePostPhotoLabel() {
+	if (!homePostPhotoName || !homePostPhoto) {
+		return;
+	}
+
+	const selectedFile = homePostPhoto.files?.[0];
+	homePostPhotoName.textContent = selectedFile?.name || translate('noFileChosen');
+}
+
+function getSelectedLanguage() {
+	return localStorage.getItem('selectedLang') || localStorage.getItem('lang') || 'en';
+}
+
+function getLocalizedCountryName(country) {
+	if (!country) {
+		return 'Unknown Country';
+	}
+
+	const language = getSelectedLanguage();
+	return language === 'bg'
+		? country.name_bg || country.name_en || 'Unknown Country'
+		: country.name_en || country.name_bg || 'Unknown Country';
+}
 
 function getPostActionHref(postId) {
 	if (!currentUser) {
@@ -48,10 +80,10 @@ function getPostActionHref(postId) {
 
 function getPostActionLabel() {
 	if (!currentUser) {
-		return 'Login to Read';
+		return translate('loginToRead');
 	}
 
-	return 'Read Full Post';
+	return translate('readFullPost');
 }
 
 function wireGuestCreatePostPrompt() {
@@ -60,7 +92,7 @@ function wireGuestCreatePostPrompt() {
 		return;
 	}
 
-	createPostTrigger.textContent = 'Login to Create Post';
+	createPostTrigger.textContent = translate('loginToCreatePost');
 	createPostTrigger.removeAttribute('data-bs-toggle');
 	createPostTrigger.removeAttribute('data-bs-target');
 	createPostTrigger.addEventListener('click', () => {
@@ -109,12 +141,12 @@ function resetHomeCreatePostForm() {
 }
 
 function populateHomeCountryOptions(countries) {
-	homePostCountry.innerHTML = '<option value="">Select a country</option>';
+	homePostCountry.innerHTML = `<option value="">${translate('postCountryPlaceholder')}</option>`;
 
 	countries.forEach((country) => {
 		const option = document.createElement('option');
 		option.value = country.id;
-		option.textContent = country.name;
+		option.textContent = getLocalizedCountryName(country);
 		homePostCountry.appendChild(option);
 	});
 }
@@ -125,7 +157,7 @@ function fileToDataUrl(file) {
 		reader.onload = () => {
 			resolve(typeof reader.result === 'string' ? reader.result : null);
 		};
-		reader.onerror = () => reject(new Error('Unable to read selected file.'));
+		reader.onerror = () => reject(new Error(translate('unableToReadFile')));
 		reader.readAsDataURL(file);
 	});
 }
@@ -135,11 +167,14 @@ function normalizeCountryName(post) {
 		return 'Unknown Country';
 	}
 
-	if (Array.isArray(post.countries)) {
-		return post.countries[0]?.name || 'Unknown Country';
+	const language = localStorage.getItem('selectedLang') || localStorage.getItem('lang') || 'en';
+	const country = Array.isArray(post.countries) ? post.countries[0] : post.countries;
+
+	if (!country) {
+		return 'Unknown Country';
 	}
 
-	return post.countries.name || 'Unknown Country';
+	return getLocalizedCountryName(country);
 }
 
 function createFeaturedSlide(post, index) {
@@ -173,7 +208,7 @@ function createFeaturedSlide(post, index) {
 	const button = document.createElement('a');
 	button.className = 'btn btn-warning';
 	button.href = getPostActionHref(post.id);
-	button.textContent = currentUser ? 'Read Post' : 'Login to Read';
+	button.textContent = currentUser ? translate('readFullPost') : translate('loginToRead');
 
 	caption.append(heading, button);
 	slideBody.appendChild(caption);
@@ -187,7 +222,7 @@ function renderFeaturedPosts(posts) {
 	featuredInner.innerHTML = '';
 
 	if (!posts.length) {
-		showAlert(featuredEmpty, 'No featured posts available yet.', 'light');
+		showAlert(featuredEmpty, translate('noFeaturedPosts'), 'light');
 		hideElement(featuredCarouselWrapper);
 		return;
 	}
@@ -247,7 +282,7 @@ function renderPosts(postsArray) {
 	postsContainer.innerHTML = '';
 
 	if (!postsArray.length) {
-		postsContainer.innerHTML = '<p class="text-muted">No posts found for this country.</p>';
+		postsContainer.innerHTML = `<p class="text-muted">${translate('noPostsFoundCountry')}</p>`;
 		return;
 	}
 
@@ -291,7 +326,7 @@ async function fetchFeaturedPosts(supabase) {
 async function fetchApprovedPosts(supabase, countryId = null) {
 	let query = supabase
 		.from('posts')
-		.select('id, title, image_url, country_id, created_at, countries(name)')
+		.select('id, title, image_url, country_id, created_at, countries(name_en, name_bg)')
 		.eq('is_approved', true)
 		.order('created_at', { ascending: false });
 
@@ -311,8 +346,8 @@ async function fetchApprovedPosts(supabase, countryId = null) {
 async function fetchCountries(supabase) {
 	const { data, error } = await supabase
 		.from('countries')
-		.select('id, name')
-		.order('name', { ascending: true });
+		.select('id, name_en, name_bg')
+		.order('name_en', { ascending: true });
 
 	if (error) {
 		throw new Error(error.message);
@@ -328,7 +363,7 @@ async function fetchCountryNameById(supabase, countryId) {
 
 	const { data, error } = await supabase
 		.from('countries')
-		.select('name')
+		.select('name_en, name_bg')
 		.eq('id', countryId)
 		.maybeSingle();
 
@@ -336,15 +371,62 @@ async function fetchCountryNameById(supabase, countryId) {
 		throw new Error(error.message);
 	}
 
-	return data?.name || null;
+	return data || null;
+}
+
+function wireHomeEvents(supabase) {
+	if (!homeEventsWired) {
+		heroSeePostsButton?.addEventListener('click', (event) => {
+			event.preventDefault();
+			countryPostsTitle?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+		});
+
+		countrySearch?.addEventListener('input', (event) => {
+			const searchTerm = event.target.value.toLowerCase();
+			const filteredArray = filterPostsByCountryAndSearch(allPosts, searchTerm);
+
+			renderPosts(filteredArray);
+		});
+
+		homeEventsWired = true;
+	}
+
+	if (!languageChangeListenerWired) {
+		document.addEventListener('languagechange', async () => {
+			if (countriesCache.length && currentUser) {
+				populateHomeCountryOptions(countriesCache);
+			}
+
+			if (selectedCountryId && selectedCountryRecord) {
+				countryPostsTitle.textContent = `${translate('postsFrom')} ${getLocalizedCountryName(selectedCountryRecord)}`;
+			} else if (selectedCountryId) {
+				countryPostsTitle.textContent = translate('postsByDestination');
+			}
+
+			renderFeaturedPosts(featuredPostsCache);
+			renderPosts(filterPostsByCountryAndSearch(allPosts));
+		});
+
+		languageChangeListenerWired = true;
+	}
+
+	void supabase;
 }
 
 function wireHomeCreatePost(supabase) {
 	homeCreatePostModal = Modal.getOrCreateInstance(createPostModalElement);
 
+	homePostPhotoBrowse?.addEventListener('click', () => {
+		homePostPhoto?.click();
+	});
+
+	homePostPhoto?.addEventListener('change', updateHomePostPhotoLabel);
+	document.addEventListener('languagechange', updateHomePostPhotoLabel);
+
 	createPostModalElement.addEventListener('hidden.bs.modal', () => {
 		homeCreatePostSubmit.disabled = false;
 		resetHomeCreatePostForm();
+		updateHomePostPhotoLabel();
 	});
 
 	homeCreatePostForm.addEventListener('submit', async (event) => {
@@ -356,17 +438,17 @@ function wireHomeCreatePost(supabase) {
 		const selectedFile = homePostPhoto.files?.[0] || null;
 
 		if (!title || !content) {
-			setHomeCreatePostMessage('Title and content are required.', 'danger');
+			setHomeCreatePostMessage(translate('postTitleContentRequired'), 'danger');
 			return;
 		}
 
 		if (!countryId) {
-			setHomeCreatePostMessage('Please select a country.', 'danger');
+			setHomeCreatePostMessage(translate('selectCountryRequired'), 'danger');
 			return;
 		}
 
 		homeCreatePostSubmit.disabled = true;
-		setHomeCreatePostMessage('Creating post...', 'secondary');
+		setHomeCreatePostMessage(translate('creatingPost'), 'secondary');
 
 		let imageUrl = null;
 		if (selectedFile) {
@@ -374,7 +456,7 @@ function wireHomeCreatePost(supabase) {
 				imageUrl = await fileToDataUrl(selectedFile);
 			} catch (error) {
 				homeCreatePostSubmit.disabled = false;
-				setHomeCreatePostMessage(error instanceof Error ? error.message : 'Unable to read selected file.', 'danger');
+				setHomeCreatePostMessage(error instanceof Error ? error.message : translate('unableToReadFile'), 'danger');
 				return;
 			}
 		}
@@ -398,71 +480,67 @@ function wireHomeCreatePost(supabase) {
 		}
 
 		homeCreatePostSubmit.disabled = false;
-		setHomeCreatePostMessage('Post submitted successfully.', 'success');
+		setHomeCreatePostMessage(translate('postSubmittedSuccess'), 'success');
 
 		window.setTimeout(() => {
 			homeCreatePostModal.hide();
 		}, 700);
 	});
+
+	updateHomePostPhotoLabel();
 }
 
 async function initDashboard() {
 	setHeroBackground();
 
-	heroSeePostsButton?.addEventListener('click', (event) => {
-		event.preventDefault();
-		countryPostsTitle?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-	});
-
 	const supabase = requireSupabase();
 	if (!supabase) {
-		showAlert(featuredLoading, 'Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env.', 'warning');
-		showAlert(postsLoading, 'Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env.', 'warning');
+		showAlert(featuredLoading, translate('supabaseMissing'), 'warning');
+		showAlert(postsLoading, translate('supabaseMissing'), 'warning');
 		return;
 	}
+
+	wireHomeEvents(supabase);
 
 	const { data: sessionData } = await supabase.auth.getSession();
 	currentUser = sessionData?.session?.user || null;
 	wireGuestCreatePostPrompt();
 
 	try {
-		const [featuredPosts, approvedPosts, selectedCountryName, countries] = await Promise.all([
+		const [featuredPosts, approvedPosts, selectedCountry, countries] = await Promise.all([
 			fetchFeaturedPosts(supabase),
 			fetchApprovedPosts(supabase, selectedCountryId),
 			fetchCountryNameById(supabase, selectedCountryId),
 			currentUser ? fetchCountries(supabase) : Promise.resolve([])
 		]);
 
+		featuredPostsCache = featuredPosts;
 		allPosts = approvedPosts;
+		selectedCountryRecord = selectedCountry;
+		countriesCache = countries;
+
 		if (currentUser) {
 			populateHomeCountryOptions(countries);
 			wireHomeCreatePost(supabase);
 		}
 
 		if (selectedCountryId) {
-			if (selectedCountryName) {
-				countryPostsTitle.textContent = `Posts from ${selectedCountryName}`;
+			if (selectedCountryRecord) {
+				countryPostsTitle.textContent = `${translate('postsFrom')} ${getLocalizedCountryName(selectedCountryRecord)}`;
 			} else {
-				countryPostsTitle.textContent = 'Posts by Destination';
+				countryPostsTitle.textContent = translate('postsByDestination');
 			}
 		}
 
 		hideElement(featuredLoading);
-		renderFeaturedPosts(featuredPosts);
+		renderFeaturedPosts(featuredPostsCache);
 
 		hideElement(postsLoading);
 		renderPosts(filterPostsByCountryAndSearch(allPosts));
-
-		countrySearch?.addEventListener('input', (event) => {
-			const searchTerm = event.target.value.toLowerCase();
-			const filteredArray = filterPostsByCountryAndSearch(allPosts, searchTerm);
-
-			renderPosts(filteredArray);
-		});
 	} catch (error) {
 		hideElement(featuredCarouselWrapper);
-		showAlert(featuredLoading, `Could not load featured posts: ${error.message}`, 'danger');
-		showAlert(postsLoading, `Could not load posts: ${error.message}`, 'danger');
+		showAlert(featuredLoading, `${translate('couldNotLoadFeaturedPosts')}: ${error.message}`, 'danger');
+		showAlert(postsLoading, `${translate('couldNotLoadPosts')}: ${error.message}`, 'danger');
 	}
 }
 

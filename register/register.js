@@ -1,6 +1,7 @@
 import { mountFooter } from '/src/components/footer/footer.js';
 import { mountHeader } from '/src/components/header/header.js';
 import { requireSupabase } from '/src/lib/supabaseClient.js';
+import { translate } from '/src/lib/i18n.js';
 
 mountHeader('#app-header');
 mountFooter('#app-footer');
@@ -56,7 +57,7 @@ form.addEventListener('submit', async (event) => {
   }
 
   message.className = 'mt-3 mb-0 text-body-secondary';
-  message.textContent = 'Creating account...';
+  message.textContent = translate('creatingAccount');
 
   const supabase = requireSupabase();
   const formData = new FormData(form);
@@ -66,7 +67,7 @@ form.addEventListener('submit', async (event) => {
 
   if (!supabase) {
     message.className = 'mt-3 mb-0 text-warning';
-    message.textContent = 'Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env.';
+    message.textContent = translate('supabaseMissing');
     isSubmitting = false;
     if (submitButton) {
       submitButton.disabled = false;
@@ -76,7 +77,7 @@ form.addEventListener('submit', async (event) => {
 
   if (!name || !email || !password) {
     message.className = 'mt-3 mb-0 text-warning';
-    message.textContent = 'Please provide name, email, and password.';
+    message.textContent = translate('registerMissingFields');
     isSubmitting = false;
     if (submitButton) {
       submitButton.disabled = false;
@@ -86,7 +87,7 @@ form.addEventListener('submit', async (event) => {
 
   if (!isValidEmail(email)) {
     message.className = 'mt-3 mb-0 text-warning';
-    message.textContent = 'Please enter a valid email address (example: name@example.com).';
+    message.textContent = translate('registerInvalidEmail');
     isSubmitting = false;
     if (submitButton) {
       submitButton.disabled = false;
@@ -97,7 +98,7 @@ form.addEventListener('submit', async (event) => {
   const { error: preflightSignInError } = await supabase.auth.signInWithPassword({ email, password });
   if (!preflightSignInError) {
     message.className = 'mt-3 mb-0 text-success';
-    message.textContent = 'Account already exists and credentials are correct. Redirecting...';
+    message.textContent = translate('accountAlreadyExistsRedirect');
     window.location.assign('/');
     return;
   }
@@ -105,7 +106,7 @@ form.addEventListener('submit', async (event) => {
   const preflightMessage = String(preflightSignInError.message || '').toLowerCase();
   if (preflightMessage.includes('email not confirmed')) {
     message.className = 'mt-3 mb-0 text-warning';
-    message.textContent = 'This account already exists but email is not confirmed yet. Please check your inbox and then log in.';
+    message.textContent = translate('emailNotConfirmed');
     isSubmitting = false;
     if (submitButton) {
       submitButton.disabled = false;
@@ -127,7 +128,7 @@ form.addEventListener('submit', async (event) => {
   if (error) {
     if (isAlreadyRegisteredError(error)) {
       message.className = 'mt-3 mb-0 text-warning';
-      message.textContent = 'This email is already registered';
+      message.textContent = translate('emailAlreadyRegistered');
       isSubmitting = false;
       if (submitButton) {
         submitButton.disabled = false;
@@ -142,7 +143,7 @@ form.addEventListener('submit', async (event) => {
 
       if (!signInError) {
         message.className = 'mt-3 mb-0 text-success';
-        message.textContent = 'Account is already available. Redirecting...';
+        message.textContent = translate('accountAlreadyAvailableRedirect');
         window.location.assign('/');
         return;
       }
@@ -150,8 +151,8 @@ form.addEventListener('submit', async (event) => {
       const signInErrorMessage = String(signInError.message || '').toLowerCase();
       message.className = 'mt-3 mb-0 text-warning';
       message.textContent = signInErrorMessage.includes('email not confirmed')
-        ? 'Your account seems created but email confirmation is still required. Please check your inbox or use Login later.'
-        : 'Signup emails are temporarily rate-limited by Supabase. Please try Login if this account already exists, or retry shortly.';
+        ? translate('emailNotConfirmedRetry')
+        : translate('signupRateLimited');
     } else {
       message.className = 'mt-3 mb-0 text-danger';
       message.textContent = error.message;
@@ -168,13 +169,13 @@ form.addEventListener('submit', async (event) => {
 
   if (data?.session) {
     message.className = 'mt-3 mb-0 text-success';
-    message.textContent = 'Registration successful. Redirecting...';
+    message.textContent = translate('registrationSuccessRedirect');
     window.location.assign('/');
     return;
   }
 
   message.className = 'mt-3 mb-0 text-success';
-  message.textContent = 'Registration successful. Check your inbox to confirm your email, then log in.';
+  message.textContent = translate('registrationSuccessCheckInbox');
   isSubmitting = false;
   if (submitButton) {
     submitButton.disabled = false;

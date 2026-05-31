@@ -13,17 +13,18 @@
       <section class="hero-section text-white d-flex align-items-center mb-5">
         <div class="container py-5">
           <div class="col-12 col-lg-8">
-            <h1 class="hero-heading display-5 fw-bold mb-3">Discover the Wonders of Asia</h1>
-            <p class="hero-subtitle lead mb-4">
+            <h1 class="hero-heading display-5 fw-bold mb-3" data-i18n="heroHeading">Discover the Wonders of Asia</h1>
+            <p class="hero-subtitle lead mb-4" data-i18n="heroSubtitle">
               Explore authentic travel stories, hidden gems, and cultural highlights from destinations across Asia.
             </p>
             <div class="hero-actions d-flex gap-2 flex-wrap">
-              <a id="hero-see-posts-button" class="hero-action-btn btn btn-warning btn-lg" href="#country-posts-title">See the posts</a>
+              <a id="hero-see-posts-button" class="hero-action-btn btn btn-warning btn-lg" href="#country-posts-title" data-i18n="heroSeePosts">See the posts</a>
               <button
                 type="button"
                 class="hero-action-btn btn btn-outline-light btn-lg"
                 data-bs-toggle="modal"
                 data-bs-target="#createPostModal"
+                data-i18n="createPost"
               >
                 Create a post
               </button>
@@ -36,38 +37,44 @@
         <div class="modal-dialog modal-lg modal-dialog-centered">
           <div class="modal-content">
             <div class="modal-header">
-              <h5 class="modal-title" id="createPostModalLabel">Create Post</h5>
-              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              <h5 class="modal-title" id="createPostModalLabel" data-i18n="createPostTitle">Create Post</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" data-i18n-aria-label="cancel"></button>
             </div>
             <form id="home-create-post-form">
               <div class="modal-body">
                 <div class="mb-3">
-                  <label for="home-post-title" class="form-label">Title</label>
+                  <label for="home-post-title" class="form-label" data-i18n="postTitleLabel">Title</label>
                   <input id="home-post-title" type="text" class="form-control" required />
                 </div>
 
                 <div class="mb-3">
-                  <label for="home-post-content" class="form-label">Content</label>
+                  <label for="home-post-content" class="form-label" data-i18n="postContentLabel">Content</label>
                   <textarea id="home-post-content" class="form-control" rows="5" required></textarea>
                 </div>
 
                 <div class="mb-3">
-                  <label for="home-post-country" class="form-label">Country</label>
+                  <label for="home-post-country" class="form-label" data-i18n="postCountryLabel">Country</label>
                   <select id="home-post-country" class="form-select" required>
-                    <option value="">Select a country</option>
+                    <option value="" data-i18n="postCountryPlaceholder">Select a country</option>
                   </select>
                 </div>
 
                 <div class="mb-1">
-                  <label for="home-post-photo" class="form-label">Photo Attachment</label>
-                  <input id="home-post-photo" type="file" class="form-control" accept="image/*" />
+                  <label for="home-post-photo" class="form-label" data-i18n="postPhotoLabel">Photo Attachment</label>
+                  <div class="d-flex flex-column gap-2">
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                      <button type="button" class="btn btn-outline-secondary btn-sm" id="home-post-photo-browse" data-i18n="chooseFile">Choose File</button>
+                      <span id="home-post-photo-name" class="text-muted small" data-i18n="noFileChosen">No file chosen</span>
+                    </div>
+                    <input id="home-post-photo" type="file" class="d-none" accept="image/*" />
+                  </div>
                 </div>
 
                 <p id="home-create-post-message" class="small mt-3 mb-0"></p>
               </div>
               <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button id="home-create-post-submit" type="submit" class="btn btn-primary">Create Post</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="cancel">Cancel</button>
+                <button id="home-create-post-submit" type="submit" class="btn btn-primary" data-i18n="createPostSubmit">Create Post</button>
               </div>
             </form>
           </div>
@@ -76,11 +83,11 @@
 
       <section class="container mb-5" aria-labelledby="featured-posts-title">
         <div class="d-flex justify-content-between align-items-center mb-3">
-          <h2 id="featured-posts-title" class="h3 mb-0">Featured Posts</h2>
+          <h2 id="featured-posts-title" class="h3 mb-0" data-i18n="featuredPostsTitle">Featured Posts</h2>
         </div>
 
-        <div id="featured-loading" class="alert alert-secondary mb-3" role="status">Loading featured posts...</div>
-        <div id="featured-empty" class="alert alert-light border d-none mb-3">No featured posts available yet.</div>
+        <div id="featured-loading" class="alert alert-secondary mb-3" role="status" data-i18n="loadingFeaturedPosts">Loading featured posts...</div>
+        <div id="featured-empty" class="alert alert-light border d-none mb-3" data-i18n="noFeaturedPosts">No featured posts available yet.</div>
 
         <div id="featured-carousel-wrapper" class="d-none">
           <div id="featured-carousel" class="carousel slide rounded-4 overflow-hidden" data-bs-ride="carousel">
@@ -88,18 +95,18 @@
             <div id="featured-carousel-inner" class="carousel-inner"></div>
             <button class="carousel-control-prev" type="button" data-bs-target="#featured-carousel" data-bs-slide="prev">
               <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-              <span class="visually-hidden">Previous</span>
+              <span class="visually-hidden" data-i18n="previous">Previous</span>
             </button>
             <button class="carousel-control-next" type="button" data-bs-target="#featured-carousel" data-bs-slide="next">
               <span class="carousel-control-next-icon" aria-hidden="true"></span>
-              <span class="visually-hidden">Next</span>
+              <span class="visually-hidden" data-i18n="next">Next</span>
             </button>
           </div>
         </div>
       </section>
 
       <section class="container" aria-labelledby="country-posts-title">
-        <h2 id="country-posts-title" class="h3 mb-3">Posts by Destination</h2>
+        <h2 id="country-posts-title" class="h3 mb-3" data-i18n="countryPostsTitle">Posts by Destination</h2>
 
         <div class="input-group mb-4">
           <span class="input-group-text"><i class="bi bi-search"></i></span>
@@ -107,11 +114,12 @@
             type="text"
             id="countrySearch"
             class="form-control form-control-lg"
+            data-i18n="searchPostsPlaceholder"
             placeholder="Search posts by destination name (e.g., Japan, Thailand)..."
           />
         </div>
 
-        <div id="posts-loading" class="alert alert-secondary mb-3" role="status">Loading posts...</div>
+        <div id="posts-loading" class="alert alert-secondary mb-3" role="status" data-i18n="loadingPosts">Loading posts...</div>
 
         <div id="postsContainer" class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4"></div>
       </section>

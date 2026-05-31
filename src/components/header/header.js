@@ -7,6 +7,7 @@ import './header.css';
 import { getCurrentRouteBase, isRouteActive } from '/src/router/router.js';
 import { requireSupabase } from '/src/lib/supabaseClient.js';
 import { getLoginPath, redirectGuestFromProtectedPage } from '/src/lib/auth.js';
+import { applyTranslations, getSavedLanguage, changeLanguage, translate } from '/src/lib/i18n.js';
 
 const DEFAULT_AVATAR_URL = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Ccircle cx='20' cy='20' r='20' fill='%23e4e6eb'/%3E%3Ccircle cx='20' cy='15' r='7' fill='white'/%3E%3Cpath d='M7 35c2.6-6.5 8-10 13-10s10.4 3.5 13 10' fill='white'/%3E%3C/svg%3E";
 
@@ -74,6 +75,41 @@ function setAvatarFeedback(target, message, type = 'muted') {
   feedbackElement.textContent = message;
 }
 
+function updateActiveLanguageButtons(target, language) {
+  target.querySelectorAll('#lang-bg, #lang-en').forEach((button) => {
+    const isActive = button.id === `lang-${language}`;
+    button.classList.toggle('active', isActive);
+    button.setAttribute('aria-pressed', String(isActive));
+  });
+}
+
+function wireLanguageSwitcher(target) {
+  const savedLanguage = getSavedLanguage();
+  changeLanguage(savedLanguage);
+  updateActiveLanguageButtons(target, savedLanguage);
+
+  function notifyLanguageChange(language) {
+    document.dispatchEvent(new CustomEvent('languagechange', { detail: { language } }));
+  }
+
+  const bgButton = target.querySelector('#lang-bg');
+  const enButton = target.querySelector('#lang-en');
+
+  bgButton?.addEventListener('click', () => {
+    changeLanguage('bg');
+    updateActiveLanguageButtons(target, 'bg');
+    notifyLanguageChange('bg');
+  });
+
+  enButton?.addEventListener('click', () => {
+    changeLanguage('en');
+    updateActiveLanguageButtons(target, 'en');
+    notifyLanguageChange('en');
+  });
+
+  applyTranslations(savedLanguage);
+}
+
 function setAvatarActionState(saveAvatarBtn, clearAvatarBtn, isDisabled) {
   if (saveAvatarBtn) {
     saveAvatarBtn.disabled = isDisabled;
@@ -87,11 +123,13 @@ function setAvatarActionState(saveAvatarBtn, clearAvatarBtn, isDisabled) {
 function setupAvatarUpload(target) {
   const saveAvatarBtn = target.querySelector('#saveAvatarBtn');
   const clearAvatarBtn = target.querySelector('#clearAvatarBtn');
+  const avatarBrowseBtn = target.querySelector('#avatarBrowseBtn');
   const avatarInput = target.querySelector('#avatarInput');
+  const avatarFileName = target.querySelector('#avatarFileName');
   const profileModalElement = target.querySelector('#profileModal');
   const navAvatar = target.querySelector('#navAvatar');
 
-  if (!saveAvatarBtn || !clearAvatarBtn || !avatarInput || !profileModalElement || !navAvatar) {
+  if (!saveAvatarBtn || !clearAvatarBtn || !avatarBrowseBtn || !avatarInput || !avatarFileName || !profileModalElement || !navAvatar) {
     return;
   }
 
@@ -101,31 +139,45 @@ function setupAvatarUpload(target) {
 
   const profileModalInstance = Modal.getOrCreateInstance(profileModalElement);
 
+  function updateAvatarFileLabel() {
+    const selectedFile = avatarInput.files?.[0];
+    avatarFileName.textContent = selectedFile?.name || translate('noFileChosen');
+  }
+
   navAvatar.addEventListener('click', () => {
     profileModalInstance.show();
   });
 
+  avatarBrowseBtn.addEventListener('click', () => {
+    avatarInput.click();
+  });
+
+  avatarInput.addEventListener('change', updateAvatarFileLabel);
+
   profileModalElement.addEventListener('show.bs.modal', () => {
     avatarInput.value = '';
+    updateAvatarFileLabel();
     setAvatarFeedback(target, '');
   });
+
+  document.addEventListener('languagechange', updateAvatarFileLabel);
 
   clearAvatarBtn.addEventListener('click', async () => {
     const supabase = requireSupabase();
     if (!supabase) {
-      setAvatarFeedback(target, 'Supabase is not configured.', 'danger');
+      setAvatarFeedback(target, translate('supabaseMissing'), 'danger');
       return;
     }
 
     const { data: sessionData } = await supabase.auth.getSession();
     const currentUser = sessionData?.session?.user;
     if (!currentUser) {
-      setAvatarFeedback(target, 'You must be logged in to clear an avatar.', 'danger');
+      setAvatarFeedback(target, translate('mustBeLoggedInToClearAvatar'), 'danger');
       return;
     }
 
     setAvatarActionState(saveAvatarBtn, clearAvatarBtn, true);
-    setAvatarFeedback(target, 'Clearing avatar...', 'secondary');
+    setAvatarFeedback(target, translate('avatarClearing'), 'secondary');
 
     try {
       const { error: updateError } = await supabase
@@ -139,12 +191,13 @@ function setupAvatarUpload(target) {
 
       navAvatar.src = DEFAULT_AVATAR_URL;
       avatarInput.value = '';
-      setAvatarFeedback(target, 'Avatar cleared successfully.', 'success');
+      updateAvatarFileLabel();
+      setAvatarFeedback(target, translate('avatarClearedSuccess'), 'success');
 
       profileModalInstance.hide();
-      window.alert('Avatar cleared successfully.');
+      window.alert(translate('avatarClearedSuccess'));
     } catch (error) {
-      setAvatarFeedback(target, error?.message || 'Failed to clear avatar.', 'danger');
+      setAvatarFeedback(target, error?.message || translate('failedToClearAvatar'), 'danger');
     } finally {
       setAvatarActionState(saveAvatarBtn, clearAvatarBtn, false);
     }
@@ -153,25 +206,25 @@ function setupAvatarUpload(target) {
   saveAvatarBtn.addEventListener('click', async () => {
     const selectedFile = avatarInput.files?.[0];
     if (!selectedFile) {
-      setAvatarFeedback(target, 'Please choose an image file first.', 'danger');
+      setAvatarFeedback(target, translate('chooseImageFileFirst'), 'danger');
       return;
     }
 
     const supabase = requireSupabase();
     if (!supabase) {
-      setAvatarFeedback(target, 'Supabase is not configured.', 'danger');
+      setAvatarFeedback(target, translate('supabaseMissing'), 'danger');
       return;
     }
 
     const { data: sessionData } = await supabase.auth.getSession();
     const currentUser = sessionData?.session?.user;
     if (!currentUser) {
-      setAvatarFeedback(target, 'You must be logged in to upload an avatar.', 'danger');
+      setAvatarFeedback(target, translate('mustBeLoggedInToUploadAvatar'), 'danger');
       return;
     }
 
     setAvatarActionState(saveAvatarBtn, clearAvatarBtn, true);
-    setAvatarFeedback(target, 'Uploading avatar...', 'secondary');
+    setAvatarFeedback(target, translate('avatarUploading'), 'secondary');
 
     try {
       const extension = selectedFile.name.includes('.')
@@ -195,7 +248,7 @@ function setupAvatarUpload(target) {
       const avatarUrl = publicUrlData?.publicUrl;
 
       if (!avatarUrl) {
-        throw new Error('Failed to retrieve avatar URL.');
+        throw new Error(translate('failedToRetrieveAvatarUrl'));
       }
 
       const { error: updateError } = await supabase
@@ -208,16 +261,17 @@ function setupAvatarUpload(target) {
       }
 
       navAvatar.src = avatarUrl;
-      setAvatarFeedback(target, 'Avatar updated successfully.', 'success');
+      updateAvatarFileLabel();
+      setAvatarFeedback(target, translate('avatarUpdatedSuccess'), 'success');
 
       profileModalInstance.hide();
-      window.alert('Avatar updated successfully.');
+      window.alert(translate('avatarUpdatedSuccess'));
     } catch (error) {
       const errorMessage = error?.message || 'Failed to upload avatar.';
       if (/bucket.*not found/i.test(errorMessage)) {
-        setAvatarFeedback(target, 'Avatar bucket is missing. Please apply the latest Supabase migration.', 'danger');
+        setAvatarFeedback(target, translate('avatarBucketMissing'), 'danger');
       } else {
-        setAvatarFeedback(target, errorMessage, 'danger');
+        setAvatarFeedback(target, errorMessage || translate('failedToUploadAvatar'), 'danger');
       }
     } finally {
       setAvatarActionState(saveAvatarBtn, clearAvatarBtn, false);
@@ -259,6 +313,7 @@ export function mountHeader(targetSelector, currentRoute) {
   redirectGuestFromProtectedPage();
 
   target.innerHTML = headerTemplate;
+  wireLanguageSwitcher(target);
   setupNavbarToggle(target);
   const links = target.querySelectorAll('[data-route]');
   const routeToUse = currentRoute || getCurrentRouteBase();

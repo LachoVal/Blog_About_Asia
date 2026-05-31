@@ -11,12 +11,12 @@
     <main class="container py-4 py-md-5">
       <div id="page-alert" class="alert alert-warning d-none" role="alert"></div>
 
-      <section id="post-loading" class="alert alert-secondary" role="status">Loading post...</section>
+      <section id="post-loading" class="alert alert-secondary" role="status" data-i18n="loadingPost">Loading post...</section>
 
       <section id="not-found" class="d-none text-center py-5">
-        <h1 class="display-6 mb-3">404 Post Not Found</h1>
-        <p class="text-body-secondary mb-4">The post you requested does not exist or is not accessible.</p>
-        <a href="/" class="btn btn-primary">Back to Home</a>
+        <h1 class="display-6 mb-3" data-i18n="postNotFound">404 Post Not Found</h1>
+        <p class="text-body-secondary mb-4" data-i18n="postNotFoundMessage">The post you requested does not exist or is not accessible.</p>
+        <a href="/" class="btn btn-primary" data-i18n="backToHomeButton">Back to Home</a>
       </section>
 
       <article id="post-view" class="d-none">
@@ -32,50 +32,51 @@
           <h1 id="post-title" class="display-6 fw-bold mb-2"></h1>
           <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
             <span id="post-country" class="badge text-bg-primary"></span>
-            <span class="text-body-secondary">By <strong id="post-author"></strong></span>
+            <span class="text-body-secondary"><span data-i18n="byAuthor">By</span> <strong id="post-author"></strong></span>
             <span class="text-body-secondary">•</span>
             <time id="post-date" class="text-body-secondary"></time>
           </div>
           <div class="d-flex flex-wrap gap-2">
             <button id="favorite-button" type="button" class="btn btn-outline-danger btn-lg">
               <span id="favorite-icon" aria-hidden="true">♡</span>
-              <span id="favorite-label">Add to Favorites</span>
+              <span id="favorite-label" data-i18n="addToFavorites">Add to Favorites</span>
             </button>
-            <a id="go-to-favorites-button" class="btn btn-outline-secondary btn-lg" href="/favorites/index.html">Go to Favorites</a>
+            <a id="go-to-favorites-button" class="btn btn-outline-secondary btn-lg" href="/favorites/index.html" data-i18n="myFavoritePosts">Go to Favorites</a>
           </div>
           <p id="favorite-message" class="small mt-2 mb-0"></p>
         </header>
 
         <section class="mb-5">
-          <h2 class="h4 mb-3">Story</h2>
+          <h2 class="h4 mb-3" data-i18n="story">Story</h2>
           <div id="post-content" class="lh-lg"></div>
         </section>
 
         <section id="comments-section" aria-labelledby="comments-title">
-          <h2 id="comments-title" class="h4 mb-3">Comments</h2>
+          <h2 id="comments-title" class="h4 mb-3" data-i18n="comments">Comments</h2>
 
           <div id="comment-auth-note" class="alert alert-info d-none">
             Please log in to write comments and manage favorites.
           </div>
 
           <form id="comment-form" class="card card-body mb-4 d-none">
-            <label for="comment-content" class="form-label">Add a comment</label>
+            <label for="comment-content" class="form-label" data-i18n="addComment">Add a comment</label>
             <textarea
               id="comment-content"
               name="content"
               class="form-control"
               rows="4"
               placeholder="Share your thoughts..."
+              data-i18n="shareThoughts"
               required
             ></textarea>
             <div class="d-flex justify-content-end mt-3">
-              <button id="comment-submit" type="submit" class="btn btn-primary">Post Comment</button>
+              <button id="comment-submit" type="submit" class="btn btn-primary" data-i18n="postComment">Post Comment</button>
             </div>
             <p id="comment-form-message" class="small mt-2 mb-0"></p>
           </form>
 
-          <div id="comments-loading" class="alert alert-secondary" role="status">Loading comments...</div>
-          <div id="comments-empty" class="alert alert-light border d-none">No comments yet. Be the first to comment.</div>
+          <div id="comments-loading" class="alert alert-secondary" role="status" data-i18n="loadingComments">Loading comments...</div>
+          <div id="comments-empty" class="alert alert-light border d-none" data-i18n="noCommentsYet">No comments yet. Be the first to comment.</div>
           <div id="comments-list" class="d-grid gap-3"></div>
         </section>
       </article>
@@ -91,24 +92,25 @@
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title" id="editCommentModalLabel">Edit Comment</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <h5 class="modal-title" id="editCommentModalLabel" data-i18n="editComment">Edit Comment</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" data-i18n-aria-label="close"></button>
           </div>
           <div class="modal-body">
             <input type="hidden" id="edit-comment-id" />
-            <label for="edit-comment-text" class="form-label">Comment</label>
+            <label for="edit-comment-text" class="form-label" data-i18n="commentLabel">Comment</label>
             <textarea
               id="edit-comment-text"
               class="form-control"
               rows="4"
               placeholder="Edit your comment"
+              data-i18n="editYourComment"
               required
             ></textarea>
             <div id="edit-comment-message" class="small mt-2 mb-0"></div>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-            <button type="button" class="btn btn-primary" id="edit-comment-save">Save Changes</button>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="cancelEdit">Cancel</button>
+            <button type="button" class="btn btn-primary" id="edit-comment-save" data-i18n="saveChangesAction">Save Changes</button>
           </div>
         </div>
       </div>

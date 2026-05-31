@@ -29,15 +29,15 @@
     </button>
     <div class="collapse navbar-collapse" id="mainNavigation">
       <ul class="navbar-nav ms-auto gap-lg-2">
-        <li class="nav-item"><a class="nav-link" data-route="/" href="/">Home</a></li>
-        <li class="nav-item"><a class="nav-link" data-route="/destinations.html" href="/destinations.html">Destinations</a></li>
-        <li class="nav-item d-none" data-auth="user"><a class="nav-link" data-route="/my-posts.html" href="/my-posts.html">My Posts</a></li>
-        <li class="nav-item d-none" data-auth="user"><a class="nav-link" data-route="/favorites" href="/favorites/index.html">Favorites</a></li>
-        <li class="nav-item d-none" data-auth="user"><a class="nav-link" data-route="/change-password" href="/change-password">Change Password</a></li>
-        <li class="nav-item" data-auth="guest"><a class="nav-link" data-route="/login" href="/login/index.html">Login</a></li>
-        <li class="nav-item" data-auth="guest"><a class="nav-link" data-route="/register" href="/register/index.html">Register</a></li>
-        <li class="nav-item d-none" data-auth="admin"><a class="nav-link" data-route="/admin" href="/admin/index.html">Admin Panel</a></li>
-        <li class="nav-item d-none" data-auth="user"><a class="nav-link" data-action="logout" href="#">Logout</a></li>
+        <li class="nav-item"><a class="nav-link" data-route="/" href="/" data-i18n="navHome">Home</a></li>
+        <li class="nav-item"><a class="nav-link" data-route="/destinations.html" href="/destinations.html" data-i18n="navDestinations">Destinations</a></li>
+        <li class="nav-item d-none" data-auth="user"><a class="nav-link" data-route="/my-posts.html" href="/my-posts.html" data-i18n="navMyPosts">My Posts</a></li>
+        <li class="nav-item d-none" data-auth="user"><a class="nav-link" data-route="/favorites" href="/favorites/index.html" data-i18n="navFavorites">Favorites</a></li>
+        <li class="nav-item d-none" data-auth="user"><a class="nav-link" data-route="/change-password" href="/change-password" data-i18n="navChangePassword">Change Password</a></li>
+        <li class="nav-item" data-auth="guest"><a class="nav-link" data-route="/login" href="/login/index.html" data-i18n="navLogin">Login</a></li>
+        <li class="nav-item" data-auth="guest"><a class="nav-link" data-route="/register" href="/register/index.html" data-i18n="navRegister">Register</a></li>
+        <li class="nav-item d-none" data-auth="admin"><a class="nav-link" data-route="/admin" href="/admin/index.html" data-i18n="navAdminPanel">Admin Panel</a></li>
+        <li class="nav-item d-none" data-auth="user"><a class="nav-link" data-action="logout" href="#" data-i18n="navLogout">Logout</a></li>
         <li class="nav-item d-none d-flex align-items-center" data-auth="user">
           <img
             id="navAvatar"
@@ -49,6 +49,12 @@
             style="object-fit: cover; cursor: pointer;"
           >
         </li>
+        <li class="nav-item d-flex align-items-center ms-lg-2">
+          <div class="btn-group btn-group-sm" role="group" aria-label="Language switcher">
+            <button id="lang-bg" class="btn btn-outline-secondary" type="button">BG</button>
+            <button id="lang-en" class="btn btn-outline-secondary" type="button">EN</button>
+          </div>
+        </li>
       </ul>
     </div>
   </nav>
@@ -58,17 +64,23 @@
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="profileModalLabel">Update Profile Avatar</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <h5 class="modal-title" id="profileModalLabel" data-i18n="profileModalTitle">Update Profile Avatar</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" data-i18n-aria-label="close"></button>
       </div>
       <div class="modal-body">
-        <input type="file" id="avatarInput" accept="image/*" class="form-control">
+        <div class="d-flex flex-column gap-2">
+          <div class="d-flex flex-wrap align-items-center gap-2">
+            <button type="button" class="btn btn-outline-secondary" id="avatarBrowseBtn" data-i18n="chooseFile">Choose File</button>
+            <span id="avatarFileName" class="text-muted small" data-i18n="noFileChosen">No file chosen</span>
+          </div>
+          <input type="file" id="avatarInput" accept="image/*" class="d-none">
+        </div>
         <div id="avatarFeedback" class="mt-2 small"></div>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-outline-danger me-auto" id="clearAvatarBtn">Clear</button>
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-        <button type="button" class="btn btn-primary" id="saveAvatarBtn">Upload &amp; Save</button>
+        <button type="button" class="btn btn-outline-danger me-auto" id="clearAvatarBtn" data-i18n="clear">Clear</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="cancel">Cancel</button>
+        <button type="button" class="btn btn-primary" id="saveAvatarBtn" data-i18n="uploadSave">Upload &amp; Save</button>
       </div>
     </div>
   </div>

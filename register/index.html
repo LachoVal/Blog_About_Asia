@@ -12,25 +12,25 @@
     <main class="auth-page py-4 py-md-5">
       <div class="container auth-window d-flex align-items-center justify-content-center">
         <section class="auth-card p-4 p-md-5 shadow-sm">
-          <h1 class="auth-title mb-2 text-center">Create Account</h1>
-          <p class="auth-subtitle text-body-secondary text-center mb-4">Join and save your favorite Asia travel inspiration.</p>
+          <h1 class="auth-title mb-2 text-center" data-i18n="createAccountTitle">Create Account</h1>
+          <p class="auth-subtitle text-body-secondary text-center mb-4" data-i18n="registerSubtitle">Join and save your favorite Asia travel inspiration.</p>
 
           <form id="register-form" class="row g-3">
             <div class="col-12">
-              <label for="register-name" class="form-label">Name</label>
-              <input id="register-name" name="name" type="text" class="form-control form-control-lg" autocomplete="name" required />
+              <label for="register-name" class="form-label" data-i18n="nameLabel">Name</label>
+              <input id="register-name" name="name" type="text" class="form-control form-control-lg" autocomplete="name" data-i18n="namePlaceholder" placeholder="Enter your name" required />
             </div>
             <div class="col-12">
-              <label for="register-email" class="form-label">Email</label>
-              <input id="register-email" name="email" type="email" class="form-control form-control-lg" autocomplete="email" required />
+              <label for="register-email" class="form-label" data-i18n="emailLabel">Email</label>
+              <input id="register-email" name="email" type="email" class="form-control form-control-lg" autocomplete="email" data-i18n="emailPlaceholder" placeholder="Enter your email" required />
             </div>
             <div class="col-12">
-              <label for="register-password" class="form-label">Password</label>
-              <input id="register-password" name="password" type="password" class="form-control form-control-lg" minlength="6" autocomplete="new-password" required />
+              <label for="register-password" class="form-label" data-i18n="passwordLabel">Password</label>
+              <input id="register-password" name="password" type="password" class="form-control form-control-lg" minlength="6" autocomplete="new-password" data-i18n="passwordPlaceholder" placeholder="Enter your password" required />
             </div>
             <div class="col-12 d-grid gap-2 mt-2">
-              <button class="btn btn-primary btn-lg" type="submit">Create Account</button>
-              <a class="btn btn-outline-secondary" href="/login/index.html">Back to login</a>
+              <button class="btn btn-primary btn-lg" type="submit" data-i18n="createAccountAction">Create Account</button>
+              <a class="btn btn-outline-secondary" href="/login/index.html" data-i18n="backToLogin">Back to login</a>
             </div>
           </form>
 

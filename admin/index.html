@@ -14,7 +14,7 @@
     <div id="app-header"></div>
 
     <main id="admin-dashboard" class="container py-4 py-md-5 d-none">
-      <h1 class="mb-4">Admin Dashboard</h1>
+      <h1 class="mb-4" data-i18n="adminDashboard">Admin Dashboard</h1>
 
       <ul class="nav nav-tabs" id="adminTabs" role="tablist">
         <li class="nav-item" role="presentation">
@@ -28,7 +28,7 @@
             aria-controls="pending-posts-pane"
             aria-selected="true"
           >
-            Pending Posts
+            <span data-i18n="pendingPostsLabel">Pending Posts</span>
           </button>
         </li>
         <li class="nav-item" role="presentation">
@@ -42,7 +42,7 @@
             aria-controls="manage-countries-pane"
             aria-selected="false"
           >
-            Manage Countries
+            <span data-i18n="manageCountriesLabel">Manage Countries</span>
           </button>
         </li>
       </ul>
@@ -61,11 +61,11 @@
             <table class="table table-hover align-middle mb-0">
               <thead>
                 <tr>
-                  <th scope="col">Title</th>
-                  <th scope="col">Author</th>
-                  <th scope="col">Country</th>
-                  <th scope="col">Date</th>
-                  <th scope="col" class="text-end">Actions</th>
+                  <th scope="col" data-i18n="titleLabel">Title</th>
+                  <th scope="col" data-i18n="authorLabel">Author</th>
+                  <th scope="col" data-i18n="postCountryLabel">Country</th>
+                  <th scope="col" data-i18n="dateLabel">Date</th>
+                  <th scope="col" class="text-end" data-i18n="actionsLabel">Actions</th>
                 </tr>
               </thead>
               <tbody id="pending-posts-tbody"></tbody>
@@ -81,10 +81,10 @@
           tabindex="0"
         >
           <div class="d-flex justify-content-between align-items-center mb-3">
-            <h2 class="h5 mb-0">Countries</h2>
+            <h2 class="h5 mb-0" data-i18n="countriesLabel">Countries</h2>
             <button id="add-country-button" type="button" class="btn btn-primary">
               <i class="bi bi-plus-lg me-2" aria-hidden="true"></i>
-              Add New Country
+              <span data-i18n="addNewCountry">Add New Country</span>
             </button>
           </div>
 
@@ -94,10 +94,10 @@
             <table class="table table-hover align-middle mb-0">
               <thead>
                 <tr>
-                  <th scope="col">Name</th>
-                  <th scope="col">Description</th>
-                  <th scope="col">Image URL</th>
-                  <th scope="col" class="text-end">Actions</th>
+                  <th scope="col" data-i18n="nameLabel">Name</th>
+                  <th scope="col" data-i18n="descriptionLabel">Description</th>
+                  <th scope="col" data-i18n="imageUrlLabel">Image URL</th>
+                  <th scope="col" class="text-end" data-i18n="actionsLabel">Actions</th>
                 </tr>
               </thead>
               <tbody id="countries-tbody"></tbody>
@@ -111,33 +111,41 @@
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title" id="countryModalLabel">Add New Country</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <h5 class="modal-title" id="countryModalLabel" data-i18n="addNewCountry">Add New Country</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" data-i18n-aria-label="close"></button>
           </div>
           <form id="country-form">
             <div class="modal-body">
               <input type="hidden" id="country-id" />
 
               <div class="mb-3">
-                <label for="country-name" class="form-label">Name</label>
-                <input id="country-name" type="text" class="form-control" required />
+                <label for="input-language" class="form-label">Input Language</label>
+                <select id="input-language" class="form-select" required>
+                  <option value="bg">Bulgarian</option>
+                  <option value="en" selected>English</option>
+                </select>
               </div>
 
               <div class="mb-3">
-                <label for="country-description" class="form-label">Description</label>
-                <textarea id="country-description" class="form-control" rows="4"></textarea>
+                <label for="admin-country-name" class="form-label">Country Name</label>
+                <input id="admin-country-name" type="text" class="form-control" required />
+              </div>
+
+              <div class="mb-3">
+                <label for="admin-country-desc" class="form-label">Country Description</label>
+                <textarea id="admin-country-desc" class="form-control" rows="4"></textarea>
               </div>
 
               <div class="mb-1">
-                <label for="country-image-url" class="form-label">Image URL</label>
+                <label for="country-image-url" class="form-label" data-i18n="imageUrlLabel">Image URL</label>
                 <input id="country-image-url" type="url" class="form-control" />
               </div>
 
               <p id="country-form-message" class="small mt-3 mb-0"></p>
             </div>
             <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-              <button id="country-form-submit" type="submit" class="btn btn-primary">Save Country</button>
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="cancel">Cancel</button>
+              <button id="country-form-submit" type="submit" class="btn btn-primary" data-i18n="saveCountryLabel">Save Country</button>
             </div>
           </form>
         </div>

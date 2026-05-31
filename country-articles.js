@@ -2,9 +2,12 @@ import { mountFooter } from '/src/components/footer/footer.js';
 import { mountHeader } from '/src/components/header/header.js';
 import { toPostRoute } from '/src/router/router.js';
 import { requireSupabase } from '/src/lib/supabaseClient.js';
+import { translate } from '/src/lib/i18n.js';
 
 mountHeader('#app-header');
 mountFooter('#app-footer');
+
+document.title = `${translate('countryPosts')} | Asian Travel Blog`;
 
 const title = document.querySelector('#country-articles-title');
 const breadcrumbCurrent = document.querySelector('#country-breadcrumb-current');
@@ -15,6 +18,9 @@ const grid = document.querySelector('#articlesGrid');
 
 const params = new URLSearchParams(window.location.search);
 const countryId = params.get('country_id');
+
+let currentCountry = null;
+let currentPosts = [];
 
 const IMAGE_PLACEHOLDER = 'https://images.unsplash.com/photo-1526481280695-3c4691f5e66c?auto=format&fit=crop&w=1200&q=80';
 
@@ -38,8 +44,8 @@ function hideAlerts() {
 }
 
 function setCountryContext(countryName) {
-  const resolved = countryName || 'Selected Country';
-  title.textContent = `Posts about ${resolved}`;
+  const resolved = countryName || translate('unknownCountry');
+  title.textContent = `${translate('postByCountryTitle')} ${resolved}`;
   breadcrumbCurrent.textContent = resolved;
 }
 
@@ -53,7 +59,7 @@ function createPostCard(post, countryName) {
   const image = document.createElement('img');
   image.src = post.image_url || IMAGE_PLACEHOLDER;
   image.className = 'card-img-top';
-  image.alt = post.title || 'Post image';
+  image.alt = post.title || translate('postCoverImage');
   image.style.height = '240px';
   image.style.objectFit = 'cover';
 
@@ -66,12 +72,12 @@ function createPostCard(post, countryName) {
 
   const heading = document.createElement('h2');
   heading.className = 'h5 card-title';
-  heading.textContent = post.title || 'Untitled Post';
+  heading.textContent = post.title || translate('unknownPost');
 
   const button = document.createElement('a');
   button.className = 'btn btn-primary mt-auto';
   button.href = toPostRoute(post.id);
-  button.textContent = 'Read Post';
+  button.textContent = translate('readLabel');
 
   body.append(badge, heading, button);
   card.append(image, body);
@@ -99,7 +105,7 @@ function renderPosts(posts, countryName) {
 async function fetchCountry(supabase, selectedCountryId) {
   const { data, error } = await supabase
     .from('countries')
-    .select('id, name')
+    .select('id, name_en, name_bg')
     .eq('id', selectedCountryId)
     .maybeSingle();
 
@@ -130,15 +136,15 @@ async function init() {
 
   if (!countryId) {
     hideLoading();
-    setCountryContext('Unknown Country');
-    showMessage('Missing country_id in URL. Please open this page from Destinations.');
+    setCountryContext(translate('unknownCountry'));
+    showMessage(translate('missingCountryId'));
     return;
   }
 
   const supabase = requireSupabase();
   if (!supabase) {
     hideLoading();
-    showMessage('Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env.');
+    showMessage(translate('supabaseMissing'));
     return;
   }
 
@@ -151,17 +157,38 @@ async function init() {
     hideLoading();
 
     if (!country) {
-      setCountryContext('Unknown Country');
-      showMessage('Country not found.');
+      setCountryContext(translate('unknownCountry'));
+      showMessage(translate('countryNotFound'));
       return;
     }
 
-    setCountryContext(country.name);
-    renderPosts(posts, country.name);
+    const language = localStorage.getItem('selectedLang') || localStorage.getItem('lang') || 'en';
+    const countryName = language === 'bg'
+      ? country.name_bg || country.name_en || translate('unknownCountry')
+      : country.name_en || country.name_bg || translate('unknownCountry');
+
+    currentCountry = country;
+    currentPosts = posts;
+    setCountryContext(countryName);
+    renderPosts(posts, countryName);
   } catch (error) {
     hideLoading();
-    showMessage(error?.message || 'Failed to load country posts.');
+    showMessage(error?.message || translate('failedLoadCountryPosts'));
   }
 }
+
+document.addEventListener('languagechange', () => {
+  if (!currentCountry) {
+    return;
+  }
+
+  const language = localStorage.getItem('selectedLang') || localStorage.getItem('lang') || 'en';
+  const countryName = language === 'bg'
+    ? currentCountry.name_bg || currentCountry.name_en || translate('unknownCountry')
+    : currentCountry.name_en || currentCountry.name_bg || translate('unknownCountry');
+
+  setCountryContext(countryName);
+  renderPosts(currentPosts, countryName);
+});
 
 init();

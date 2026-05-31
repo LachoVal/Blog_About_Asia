@@ -2,9 +2,12 @@ import { mountFooter } from '/src/components/footer/footer.js';
 import { mountHeader } from '/src/components/header/header.js';
 import { requireSupabase } from '/src/lib/supabaseClient.js';
 import { getLoginPath, redirectGuestFromProtectedPage } from '/src/lib/auth.js';
+import { translate } from '/src/lib/i18n.js';
 
 mountHeader('#app-header');
 mountFooter('#app-footer');
+
+document.title = `${translate('myFavoritePosts')} | Asian Travel Blog`;
 
 const list = document.querySelector('#favorites-list');
 const emptyState = document.querySelector('#favorites-empty');
@@ -30,14 +33,21 @@ function hideMessage() {
 
 function normalizeCountryName(countryValue) {
   if (!countryValue) {
-    return 'Unknown Country';
+    return translate('unknownCountry');
   }
 
-  if (Array.isArray(countryValue)) {
-    return countryValue[0]?.name || 'Unknown Country';
+  const language = localStorage.getItem('selectedLang') || localStorage.getItem('lang') || 'en';
+  const country = Array.isArray(countryValue) ? countryValue[0] : countryValue;
+
+  if (!country) {
+    return translate('unknownCountry');
   }
 
-  return countryValue.name || 'Unknown Country';
+  if (language === 'bg') {
+    return country.name_bg || country.name_en || translate('unknownCountry');
+  }
+
+  return country.name_en || country.name_bg || translate('unknownCountry');
 }
 
 function escapeHtml(value) {
@@ -60,7 +70,7 @@ function createFavoriteCard(favorite) {
   card.className = 'card mb-3';
   card.dataset.favoriteId = String(favorite.id);
 
-  const postTitle = post.title || 'Untitled Post';
+  const postTitle = post.title || translate('unknownPost');
   const safePostTitle = escapeHtml(postTitle);
   const countryName = normalizeCountryName(post.countries);
   const safeCountryName = escapeHtml(countryName);
@@ -77,10 +87,10 @@ function createFavoriteCard(favorite) {
             <span class="badge text-bg-primary favorite-country-badge">${safeCountryName}</span>
           </div>
           <div class="d-flex flex-wrap gap-2">
-            <a class="btn btn-primary" href="/post.html?id=${post.id}">Read Post</a>
+            <a class="btn btn-primary" href="/post.html?id=${post.id}">${translate('read')}</a>
             <button type="button" class="btn btn-danger js-remove-favorite" data-favorite-id="${favorite.id}">
               <i class="bi bi-heart-fill" aria-hidden="true"></i>
-              <span class="ms-1">Remove</span>
+              <span class="ms-1">${translate('removeFavorite')}</span>
             </button>
           </div>
         </div>
@@ -117,6 +127,16 @@ function renderFavorites() {
   renderEmptyState(false);
 }
 
+function wireLanguageChangeRerender() {
+  document.addEventListener('languagechange', () => {
+    if (!state.currentUser) {
+      return;
+    }
+
+    renderFavorites();
+  });
+}
+
 async function requireCurrentUser() {
   const { data } = await state.supabase.auth.getSession();
   const currentUser = data?.session?.user || null;
@@ -133,7 +153,7 @@ async function requireCurrentUser() {
 async function fetchFavorites() {
   const { data, error } = await state.supabase
     .from('favorites')
-    .select('id, post_id, posts(id, title, image_url, countries(name))')
+    .select('id, post_id, posts(id, title, image_url, countries(name_en, name_bg))')
     .eq('user_id', state.currentUser.id)
     .order('id', { ascending: false });
 
@@ -182,7 +202,7 @@ list.addEventListener('click', async (event) => {
   try {
     await removeFavorite(favoriteRecordId);
   } catch (error) {
-    showMessage(error?.message || 'Failed to remove this favorite.');
+    showMessage(error?.message || translate('failedRemoveFavorite'));
     removeButton.disabled = false;
   }
 });
@@ -199,6 +219,8 @@ async function init() {
     return;
   }
 
+  wireLanguageChangeRerender();
+
   try {
     const currentUser = await requireCurrentUser();
     if (!currentUser) {
@@ -208,7 +230,7 @@ async function init() {
     await fetchFavorites();
     renderFavorites();
   } catch (error) {
-    showMessage(error?.message || 'Failed to load favorites.');
+    showMessage(error?.message || translate('failedLoadFavorites'));
     renderEmptyState(true);
   }
 }

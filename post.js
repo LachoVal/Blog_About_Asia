@@ -3,9 +3,12 @@ import { mountHeader } from '/src/components/header/header.js';
 import { requireSupabase } from '/src/lib/supabaseClient.js';
 import { Modal } from 'bootstrap';
 import { redirectGuestFromProtectedPage } from '/src/lib/auth.js';
+import { translate } from '/src/lib/i18n.js';
 
 mountHeader('#app-header');
 mountFooter('#app-footer');
+
+document.title = `${translate('readPostLabel')} | Asian Travel Blog`;
 
 const COVER_PLACEHOLDER = 'https://images.unsplash.com/photo-1526481280695-3c4691f5e66c?auto=format&fit=crop&w=1600&q=80';
 
@@ -99,10 +102,13 @@ function extractPostIdFromQuery() {
 
 function formatPublishedDate(value) {
   if (!value) {
-    return 'Unknown date';
+    return translate('unknownDate');
   }
 
-  return new Intl.DateTimeFormat('en-US', {
+  const language = localStorage.getItem('selectedLang') || localStorage.getItem('lang') || 'en';
+  const locale = language === 'bg' ? 'bg-BG' : 'en-US';
+
+  return new Intl.DateTimeFormat(locale, {
     year: 'numeric',
     month: 'long',
     day: 'numeric'
@@ -114,7 +120,10 @@ function formatCommentDate(value) {
     return '';
   }
 
-  return new Intl.DateTimeFormat('en-US', {
+  const language = localStorage.getItem('selectedLang') || localStorage.getItem('lang') || 'en';
+  const locale = language === 'bg' ? 'bg-BG' : 'en-US';
+
+  return new Intl.DateTimeFormat(locale, {
     dateStyle: 'medium',
     timeStyle: 'short'
   }).format(new Date(value));
@@ -132,7 +141,7 @@ function escapeHtml(content) {
 function toParagraphs(text) {
   const normalized = String(text || '').trim();
   if (!normalized) {
-    return '<p class="text-body-secondary mb-0">No content available.</p>';
+    return `<p class="text-body-secondary mb-0">${translate('unknownContent')}</p>`;
   }
 
   return normalized
@@ -149,11 +158,15 @@ function showPostNotFound() {
 
 function renderPost(post) {
   postCoverImage.src = post.image_url || COVER_PLACEHOLDER;
-  postCoverImage.alt = post.title || 'Travel post cover image';
+  postCoverImage.alt = post.title || translate('postCoverImage');
 
-  postTitle.textContent = post.title || 'Untitled Post';
-  postCountry.textContent = post?.countries?.name || 'Unknown Country';
-  postAuthor.textContent = post?.profiles?.username || 'Unknown Author';
+  postTitle.textContent = post.title || translate('unknownPost');
+  const language = localStorage.getItem('selectedLang') || localStorage.getItem('lang') || 'en';
+  const country = Array.isArray(post?.countries) ? post.countries[0] : post?.countries;
+  postCountry.textContent = language === 'bg'
+    ? country?.name_bg || country?.name_en || translate('unknownCountry')
+    : country?.name_en || country?.name_bg || translate('unknownCountry');
+  postAuthor.textContent = post?.profiles?.username || translate('unknownAuthor');
   postDate.textContent = formatPublishedDate(post.created_at);
   postContent.innerHTML = toParagraphs(post.content);
 
@@ -191,7 +204,7 @@ async function loadCurrentUser() {
 async function fetchPostById(postId) {
   const { data, error } = await state.supabase
     .from('posts')
-    .select('id, title, content, image_url, created_at, author_id, country_id, is_approved, profiles!posts_author_id_fkey(username), countries!posts_country_id_fkey(name)')
+    .select('id, title, content, image_url, created_at, author_id, country_id, is_approved, profiles!posts_author_id_fkey(username), countries!posts_country_id_fkey(name_en, name_bg)')
     .eq('id', postId)
     .single();
 
@@ -225,7 +238,7 @@ function updateFavoriteButtonUI() {
   if (!isLoggedIn) {
     favoriteButton.className = 'btn btn-outline-danger btn-lg';
     favoriteIcon.textContent = '♡';
-    favoriteLabel.textContent = 'Login to Add Favorite';
+    favoriteLabel.textContent = translate('loginToAddFavorite');
     return;
   }
 
@@ -238,7 +251,7 @@ function updateFavoriteButtonUI() {
 
   favoriteButton.className = isFavorite ? 'btn btn-danger btn-lg' : 'btn btn-outline-danger btn-lg';
   favoriteIcon.textContent = isFavorite ? '♥' : '♡';
-  favoriteLabel.textContent = isFavorite ? 'Remove from Favorites' : 'Add to Favorites';
+  favoriteLabel.textContent = isFavorite ? translate('removeFromFavorites') : translate('addToFavorites');
 }
 
 async function syncFavoriteState() {
@@ -272,7 +285,7 @@ async function toggleFavorite() {
   }
 
   if (!state.currentUser || !state.post?.id) {
-    setTextMessage(favoriteMessage, 'Please log in to manage favorites.', 'warning');
+    setTextMessage(favoriteMessage, translate('loginToManageFavorites'), 'warning');
     return;
   }
 
@@ -300,7 +313,7 @@ async function toggleFavorite() {
     state.favoriteId = null;
     updateFavoriteButtonUI();
     favoriteButton.disabled = false;
-    setTextMessage(favoriteMessage, 'Removed from favorites.', 'success');
+    setTextMessage(favoriteMessage, translate('removedFromFavorites'), 'success');
     return;
   }
 
@@ -319,7 +332,7 @@ async function toggleFavorite() {
   state.favoriteId = data.id;
   updateFavoriteButtonUI();
   favoriteButton.disabled = false;
-  setTextMessage(favoriteMessage, 'Added to favorites.', 'success');
+  setTextMessage(favoriteMessage, translate('addedToFavorites'), 'success');
 }
 
 function canManageComment(comment) {
@@ -392,17 +405,17 @@ function createCommentElement(comment) {
     const editButton = document.createElement('button');
     editButton.type = 'button';
     editButton.className = 'btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1';
-    editButton.setAttribute('aria-label', 'Edit comment');
-    editButton.title = 'Edit comment';
-    editButton.innerHTML = '<span aria-hidden="true">✏️</span><span>Edit</span>';
+    editButton.setAttribute('aria-label', translate('editComment'));
+    editButton.title = translate('editComment');
+    editButton.innerHTML = `<span aria-hidden="true">✏️</span><span>${translate('editComment')}</span>`;
     editButton.addEventListener('click', () => openEditModal(comment.id, comment.content));
 
     const deleteButton = document.createElement('button');
     deleteButton.type = 'button';
     deleteButton.className = 'btn btn-sm btn-outline-danger d-inline-flex align-items-center gap-1';
-    deleteButton.setAttribute('aria-label', 'Delete comment');
-    deleteButton.title = 'Delete comment';
-    deleteButton.innerHTML = '<span aria-hidden="true">🗑️</span><span>Delete</span>';
+    deleteButton.setAttribute('aria-label', translate('deleteComment'));
+    deleteButton.title = translate('deleteComment');
+    deleteButton.innerHTML = `<span aria-hidden="true">🗑️</span><span>${translate('deleteComment')}</span>`;
     deleteButton.addEventListener('click', () => handleDeleteComment(comment));
 
     actions.append(editButton, deleteButton);
@@ -439,12 +452,12 @@ async function fetchComments() {
     commentsLoading.classList.add('d-none');
     commentsList.innerHTML = '';
     state.comments = [];
-    commentsEmpty.textContent = 'Comments are unavailable while this post is pending review.';
+    commentsEmpty.textContent = translate('commentsUnavailablePending');
     commentsEmpty.classList.remove('d-none');
     return;
   }
 
-  commentsEmpty.textContent = 'No comments yet. Be the first to comment.';
+  commentsEmpty.textContent = translate('noCommentsYet');
   commentsLoading.classList.remove('d-none');
   commentsEmpty.classList.add('d-none');
 
@@ -468,26 +481,26 @@ async function handleAddComment(event) {
   event.preventDefault();
 
   if (!state.currentUser) {
-    setTextMessage(commentFormMessage, 'Please log in to post comments.', 'warning');
+    setTextMessage(commentFormMessage, translate('loginToPostComments'), 'warning');
     return;
   }
 
   if (!canCurrentUserPostComment()) {
     const warningMessage = state.post?.is_approved === false
-      ? 'Comments are disabled until this post is published.'
-      : 'You are not allowed to comment on this post.';
+      ? translate('commentsDisabledPending')
+      : translate('notAllowedToComment');
     setTextMessage(commentFormMessage, warningMessage, 'warning');
     return;
   }
 
   const content = commentContent.value.trim();
   if (!content) {
-    setTextMessage(commentFormMessage, 'Comment cannot be empty.', 'warning');
+    setTextMessage(commentFormMessage, translate('commentCannotBeEmpty'), 'warning');
     return;
   }
 
   commentSubmit.disabled = true;
-  setTextMessage(commentFormMessage, 'Posting comment...', 'secondary');
+  setTextMessage(commentFormMessage, translate('postingComment'), 'secondary');
 
   const { error } = await state.supabase.from('comments').insert({
     content,
@@ -503,7 +516,7 @@ async function handleAddComment(event) {
   }
 
   commentForm.reset();
-  setTextMessage(commentFormMessage, 'Comment posted.', 'success');
+  setTextMessage(commentFormMessage, translate('commentPosted'), 'success');
   await fetchComments();
 }
 
@@ -514,7 +527,7 @@ async function handleEditComment(comment) {
 function openEditModal(commentId, currentText) {
   const comment = state.comments.find((item) => String(item.id) === String(commentId));
   if (!comment || !canManageComment(comment)) {
-    showGlobalAlert('You are not allowed to edit this comment.', 'warning');
+    showGlobalAlert(translate('youCannotEditComment'), 'warning');
     return;
   }
 
@@ -525,7 +538,7 @@ function openEditModal(commentId, currentText) {
   hideGlobalAlert();
 
   if (!editCommentModalElement) {
-    showGlobalAlert('Edit modal is unavailable on this page.', 'danger');
+    showGlobalAlert(translate('editModalUnavailable'), 'danger');
     return;
   }
 
@@ -552,12 +565,12 @@ async function handleSaveEditedComment() {
   const newText = editCommentTextArea.value.trim();
 
   if (!commentId) {
-    setEditModalMessage('No comment selected for editing.', 'warning');
+    setEditModalMessage(translate('noCommentSelected'), 'warning');
     return;
   }
 
   if (!newText) {
-    setEditModalMessage('Comment cannot be empty.', 'warning');
+    setEditModalMessage(translate('commentSelectedEmpty'), 'warning');
     return;
   }
 
@@ -594,11 +607,11 @@ async function handleSaveEditedComment() {
 
 async function handleDeleteComment(comment) {
   if (!canManageComment(comment)) {
-    showGlobalAlert('You are not allowed to delete this comment.', 'warning');
+    showGlobalAlert(translate('youCannotDeleteComment'), 'warning');
     return;
   }
 
-  const shouldDelete = window.confirm('Delete this comment?');
+  const shouldDelete = window.confirm(translate('deleteCommentConfirm'));
   if (!shouldDelete) {
     return;
   }
@@ -629,10 +642,10 @@ function setupAuthDependentUI() {
   commentForm.classList.add('d-none');
 
   if (!state.currentUser) {
-    commentAuthNote.textContent = 'Please log in to post comments.';
+    commentAuthNote.textContent = translate('loginToPostComments');
     commentAuthNote.classList.remove('d-none');
   } else if (state.post?.is_approved === false) {
-    commentAuthNote.textContent = 'Comments are disabled until this post is published.';
+    commentAuthNote.textContent = translate('commentsDisabledPending');
     commentAuthNote.classList.remove('d-none');
   } else {
     commentAuthNote.classList.add('d-none');
@@ -651,7 +664,7 @@ async function init() {
   state.postId = extractPostIdFromQuery() || '';
 
   if (!state.supabase) {
-    showGlobalAlert('Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env.', 'warning');
+    showGlobalAlert(translate('supabaseMissing'), 'warning');
     postLoading.classList.add('d-none');
     return;
   }
@@ -679,9 +692,19 @@ async function init() {
   } catch (error) {
     postLoading.classList.add('d-none');
     commentsLoading.classList.add('d-none');
-    showGlobalAlert(error.message || 'Something went wrong while loading the post.', 'danger');
+    showGlobalAlert(error.message || translate('failedLoadCountryPosts'), 'danger');
   }
 }
+
+document.addEventListener('languagechange', () => {
+  if (!state.post) {
+    return;
+  }
+
+  renderPost(state.post);
+  renderComments();
+  setupAuthDependentUI();
+});
 
 favoriteButton.addEventListener('click', toggleFavorite);
 commentForm.addEventListener('submit', handleAddComment);

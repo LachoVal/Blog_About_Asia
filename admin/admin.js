@@ -3,6 +3,7 @@ import { mountFooter } from '/src/components/footer/footer.js';
 import { mountHeader } from '/src/components/header/header.js';
 import { requireSupabase } from '/src/lib/supabaseClient.js';
 import { redirectGuestFromProtectedPage } from '/src/lib/auth.js';
+import { translate } from '/src/lib/i18n.js';
 
 mountHeader('#app-header', '/admin');
 mountFooter('#app-footer');
@@ -24,16 +25,37 @@ const countryForm = document.querySelector('#country-form');
 const countryFormSubmit = document.querySelector('#country-form-submit');
 const countryFormMessage = document.querySelector('#country-form-message');
 const countryIdInput = document.querySelector('#country-id');
-const countryNameInput = document.querySelector('#country-name');
-const countryDescriptionInput = document.querySelector('#country-description');
+const inputLanguageSelect = document.querySelector('#input-language');
+const countryNameInput = document.querySelector('#admin-country-name');
+const countryDescriptionInput = document.querySelector('#admin-country-desc');
 const countryImageUrlInput = document.querySelector('#country-image-url');
+
+const countryFieldCopy = {
+  en: {
+    nameLabel: 'Country Name',
+    namePlaceholder: 'Enter the country name in English',
+    descriptionLabel: 'Country Description',
+    descriptionPlaceholder: 'Enter the country description in English'
+  },
+  bg: {
+    nameLabel: 'Име на държавата',
+    namePlaceholder: 'Въведете името на държавата на български',
+    descriptionLabel: 'Описание на държавата',
+    descriptionPlaceholder: 'Въведете описанието на държавата на български'
+  }
+};
 
 const state = {
   supabase: null,
   countries: [],
   pendingPosts: [],
   countryModal: null,
-  countryMode: 'create'
+  countryMode: 'create',
+  countryDraftLanguage: 'en',
+  countryDrafts: {
+    en: { name: '', description: '' },
+    bg: { name: '', description: '' }
+  }
 };
 
 function redirectToHome() {
@@ -61,8 +83,96 @@ function clearCountryFormMessage() {
   countryFormMessage.textContent = '';
 }
 
+function getCountryFormLanguage() {
+  return inputLanguageSelect.value === 'bg' ? 'bg' : 'en';
+}
+
+function readCountryDraft(language) {
+  const selectedLanguage = language === 'bg' ? 'bg' : 'en';
+  return state.countryDrafts[selectedLanguage] || { name: '', description: '' };
+}
+
+function writeCountryDraft(language, name, description) {
+  const selectedLanguage = language === 'bg' ? 'bg' : 'en';
+  state.countryDrafts[selectedLanguage] = {
+    name: String(name || ''),
+    description: String(description || '')
+  };
+}
+
+function getCountryFormDataForLanguage(country, language) {
+  const selectedLanguage = language === 'bg' ? 'bg' : 'en';
+  return {
+    name: country?.[`name_${selectedLanguage}`] || '',
+    description: country?.[`description_${selectedLanguage}`] || ''
+  };
+}
+
+function syncCountryFormFieldsForLanguage(language, country = null) {
+  const selectedLanguage = language === 'bg' ? 'bg' : 'en';
+  state.countryDraftLanguage = selectedLanguage;
+  inputLanguageSelect.value = selectedLanguage;
+
+  const copy = countryFieldCopy[selectedLanguage];
+  document.querySelector('label[for="admin-country-name"]').textContent = copy.nameLabel;
+  document.querySelector('label[for="admin-country-desc"]').textContent = copy.descriptionLabel;
+  countryNameInput.placeholder = copy.namePlaceholder;
+  countryDescriptionInput.placeholder = copy.descriptionPlaceholder;
+
+  if (country) {
+    const values = getCountryFormDataForLanguage(country, selectedLanguage);
+    countryNameInput.value = values.name;
+    countryDescriptionInput.value = values.description;
+    return;
+  }
+
+  const draft = readCountryDraft(selectedLanguage);
+  countryNameInput.value = draft.name;
+  countryDescriptionInput.value = draft.description;
+}
+
+function updateCurrentCountryDraft() {
+  writeCountryDraft(state.countryDraftLanguage, countryNameInput.value, countryDescriptionInput.value);
+}
+
+async function translateText(value, sourceLanguage, targetLanguage) {
+  const text = String(value || '').trim();
+  if (!text) {
+    return '';
+  }
+
+  const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${encodeURIComponent(sourceLanguage)}|${encodeURIComponent(targetLanguage)}`;
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error('Translation service is unavailable right now.');
+  }
+
+  const data = await response.json();
+  const translatedText = data?.responseData?.translatedText || data?.matches?.[0]?.translation;
+
+  if (!translatedText) {
+    throw new Error('Unable to translate the provided text.');
+  }
+
+  return String(translatedText).trim();
+}
+
 function normalizeCountryName(value) {
   return String(value || '').trim().toLowerCase();
+}
+
+function getSelectedLanguage() {
+  return localStorage.getItem('selectedLang') || localStorage.getItem('lang') || 'en';
+}
+
+function getCountryLocalizedValue(country, baseKey) {
+  const language = getSelectedLanguage();
+  if (language === 'bg') {
+    return country?.[`${baseKey}_bg`] || country?.[`${baseKey}_en`] || '';
+  }
+
+  return country?.[`${baseKey}_en`] || country?.[`${baseKey}_bg`] || '';
 }
 
 function isDuplicateCountryName(name, excludeCountryId = null) {
@@ -76,7 +186,7 @@ function isDuplicateCountryName(name, excludeCountryId = null) {
       return false;
     }
 
-    return normalizeCountryName(country.name) === normalized;
+    return normalizeCountryName(getCountryLocalizedValue(country, 'name')) === normalized;
   });
 }
 
@@ -117,7 +227,10 @@ function formatDate(dateString) {
     return '—';
   }
 
-  return date.toLocaleDateString(undefined, {
+  const language = localStorage.getItem('selectedLang') || localStorage.getItem('lang') || 'en';
+  const locale = language === 'bg' ? 'bg-BG' : 'en-US';
+
+  return date.toLocaleDateString(locale, {
     year: 'numeric',
     month: 'short',
     day: 'numeric'
@@ -142,7 +255,7 @@ function renderPendingPosts() {
   pendingPostsTbody.innerHTML = state.pendingPosts
     .map((post) => {
       const authorName = post.profiles?.username || 'Unknown';
-      const countryName = post.countries?.name || 'Unknown';
+      const countryName = getCountryLocalizedValue(post.countries, 'name') || 'Unknown';
 
       return `
         <tr data-post-id="${post.id}">
@@ -155,9 +268,9 @@ function renderPendingPosts() {
               <a
                 class="btn btn-primary btn-sm"
                 href="/post.html?id=${encodeURIComponent(post.id)}"
-                aria-label="View post"
+                aria-label="${translate('viewLabel')}"
                 data-bs-toggle="tooltip"
-                data-bs-title="View"
+                data-bs-title="${translate('viewLabel')}"
               >
                 <i class="bi bi-eye" aria-hidden="true"></i>
               </a>
@@ -165,9 +278,9 @@ function renderPendingPosts() {
                 type="button"
                 class="btn btn-success btn-sm js-approve-post"
                 data-post-id="${post.id}"
-                aria-label="Approve post"
+                aria-label="${translate('approveLabel')}"
                 data-bs-toggle="tooltip"
-                data-bs-title="Approve"
+                data-bs-title="${translate('approveLabel')}"
               >
                 <i class="bi bi-check-lg" aria-hidden="true"></i>
               </button>
@@ -175,9 +288,9 @@ function renderPendingPosts() {
                 type="button"
                 class="btn btn-warning btn-sm js-edit-post"
                 data-post-id="${post.id}"
-                aria-label="Edit post"
+                aria-label="${translate('editLabel')}"
                 data-bs-toggle="tooltip"
-                data-bs-title="Edit"
+                data-bs-title="${translate('editLabel')}"
               >
                 <i class="bi bi-pencil" aria-hidden="true"></i>
               </button>
@@ -185,9 +298,9 @@ function renderPendingPosts() {
                 type="button"
                 class="btn btn-danger btn-sm js-delete-post"
                 data-post-id="${post.id}"
-                aria-label="Delete post"
+                aria-label="${translate('deleteLabel')}"
                 data-bs-toggle="tooltip"
-                data-bs-title="Delete"
+                data-bs-title="${translate('deleteLabel')}"
               >
                 <i class="bi bi-trash" aria-hidden="true"></i>
               </button>
@@ -213,8 +326,8 @@ function renderCountries() {
   countriesTbody.innerHTML = state.countries
     .map((country) => `
       <tr data-country-id="${country.id}">
-        <td>${escapeHtml(country.name || '—')}</td>
-        <td>${escapeHtml(country.description || '—')}</td>
+        <td>${escapeHtml(getCountryLocalizedValue(country, 'name') || '—')}</td>
+        <td>${escapeHtml(getCountryLocalizedValue(country, 'description') || '—')}</td>
         <td>
           ${country.image_url ? `<a href="${escapeHtml(country.image_url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(country.image_url)}</a>` : '—'}
         </td>
@@ -224,9 +337,9 @@ function renderCountries() {
               type="button"
               class="btn btn-warning btn-sm js-edit-country"
               data-country-id="${country.id}"
-              aria-label="Edit country"
+              aria-label="${translate('editLabel')}"
               data-bs-toggle="tooltip"
-              data-bs-title="Edit"
+              data-bs-title="${translate('editLabel')}"
             >
               <i class="bi bi-pencil" aria-hidden="true"></i>
             </button>
@@ -234,9 +347,9 @@ function renderCountries() {
               type="button"
               class="btn btn-danger btn-sm js-delete-country"
               data-country-id="${country.id}"
-              aria-label="Delete country"
+              aria-label="${translate('deleteLabel')}"
               data-bs-toggle="tooltip"
-              data-bs-title="Delete"
+              data-bs-title="${translate('deleteLabel')}"
             >
               <i class="bi bi-trash" aria-hidden="true"></i>
             </button>
@@ -253,7 +366,7 @@ function renderCountries() {
 async function fetchPendingPosts() {
   const { data, error } = await state.supabase
     .from('posts')
-    .select('id, title, created_at, is_approved, profiles(username), countries(name)')
+    .select('id, title, created_at, is_approved, profiles(username), countries(name_en, name_bg)')
     .eq('is_approved', false)
     .order('created_at', { ascending: false });
 
@@ -268,8 +381,8 @@ async function fetchPendingPosts() {
 async function fetchCountries() {
   const { data, error } = await state.supabase
     .from('countries')
-    .select('id, name, description, image_url')
-    .order('name', { ascending: true });
+    .select('id, name_en, name_bg, description_en, description_bg, image_url')
+    .order('name_en', { ascending: true });
 
   if (error) {
     throw new Error(error.message);
@@ -279,8 +392,9 @@ async function fetchCountries() {
   renderCountries();
 }
 
-function resetCountryForm() {
+function resetCountryForm(language = getSelectedLanguage()) {
   countryIdInput.value = '';
+  inputLanguageSelect.value = 'en';
   countryNameInput.value = '';
   countryDescriptionInput.value = '';
   countryImageUrlInput.value = '';
@@ -289,9 +403,10 @@ function resetCountryForm() {
 
 function openCountryCreateModal() {
   state.countryMode = 'create';
-  resetCountryForm();
+  resetCountryForm(getSelectedLanguage());
   countryModalLabel.textContent = 'Add New Country';
   countryFormSubmit.textContent = 'Save Country';
+  syncCountryFormFieldsForLanguage('en');
   state.countryModal.show();
 }
 
@@ -303,13 +418,12 @@ function openCountryEditModal(countryId) {
   }
 
   state.countryMode = 'edit';
-  resetCountryForm();
+  resetCountryForm(getSelectedLanguage());
   countryModalLabel.textContent = 'Edit Country';
   countryFormSubmit.textContent = 'Save Changes';
 
   countryIdInput.value = country.id;
-  countryNameInput.value = country.name || '';
-  countryDescriptionInput.value = country.description || '';
+  syncCountryFormFieldsForLanguage('en', country);
   countryImageUrlInput.value = country.image_url || '';
   state.countryModal.show();
 }
@@ -334,7 +448,7 @@ function editPost(postId) {
 }
 
 async function deletePost(postId) {
-  const shouldDelete = window.confirm('Are you sure you want to delete this post?');
+  const shouldDelete = window.confirm(translate('confirmDeletePost'));
   if (!shouldDelete) {
     return;
   }
@@ -354,9 +468,7 @@ async function deletePost(postId) {
 }
 
 async function deleteCountry(countryId) {
-  const shouldDelete = window.confirm(
-    'Deleting this country may fail if posts are attached to it. Do you want to continue?'
-  );
+  const shouldDelete = window.confirm(translate('confirmDeleteCountry'));
   if (!shouldDelete) {
     return;
   }
@@ -376,13 +488,21 @@ async function deleteCountry(countryId) {
 }
 
 async function handleCountryFormSubmit(event) {
+  return addNewCountry(event);
+}
+
+async function addNewCountry(event) {
   event.preventDefault();
 
+  const submitButton = countryFormSubmit;
+  const inputLanguage = getCountryFormLanguage();
   const name = countryNameInput.value.trim();
   const description = countryDescriptionInput.value.trim();
   const imageUrl = countryImageUrlInput.value.trim();
   const isEditMode = state.countryMode === 'edit';
   const countryId = countryIdInput.value;
+
+  writeCountryDraft(inputLanguage, name, description);
 
   if (!name) {
     setCountryFormMessage('Country name is required.', 'danger');
@@ -400,14 +520,31 @@ async function handleCountryFormSubmit(event) {
     return;
   }
 
-  countryFormSubmit.disabled = true;
+  const submitLabel = isEditMode ? 'Save Changes' : 'Save Country';
+  submitButton.disabled = true;
+  submitButton.textContent = 'Processing...';
   setCountryFormMessage(isEditMode ? 'Saving changes...' : 'Creating country...', 'secondary');
 
-  const payload = {
-    name,
-    description: description || null,
-    image_url: parsedImage?.value ?? null
-  };
+  const sourceLanguage = inputLanguage === 'bg' ? 'bg' : 'en';
+  const targetLanguage = sourceLanguage === 'bg' ? 'en' : 'bg';
+  const translatedName = await translateText(name, sourceLanguage, targetLanguage);
+  const translatedDescription = await translateText(description, sourceLanguage, targetLanguage);
+
+  const payload = sourceLanguage === 'bg'
+    ? {
+        name_bg: name,
+        description_bg: description || null,
+        name_en: translatedName,
+        description_en: translatedDescription || null,
+        image_url: parsedImage?.value ?? null
+      }
+    : {
+        name_en: name,
+        description_en: description || null,
+        name_bg: translatedName,
+        description_bg: translatedDescription || null,
+        image_url: parsedImage?.value ?? null
+      };
 
   try {
     if (isEditMode) {
@@ -415,7 +552,7 @@ async function handleCountryFormSubmit(event) {
         .from('countries')
         .update(payload)
         .eq('id', countryId)
-        .select('id, name, description, image_url')
+        .select('id, name_en, name_bg, description_en, description_bg, image_url')
         .maybeSingle();
 
       if (error || !data) {
@@ -434,7 +571,7 @@ async function handleCountryFormSubmit(event) {
       const { data, error } = await state.supabase
         .from('countries')
         .insert(payload)
-        .select('id, name, description, image_url')
+        .select('id, name_en, name_bg, description_en, description_bg, image_url')
         .maybeSingle();
 
       if (error || !data) {
@@ -446,16 +583,22 @@ async function handleCountryFormSubmit(event) {
     }
 
     state.countries.sort((a, b) => {
-      const aName = (a.name || '').toLowerCase();
-      const bName = (b.name || '').toLowerCase();
+      const aName = getCountryLocalizedValue(a, 'name').toLowerCase();
+      const bName = getCountryLocalizedValue(b, 'name').toLowerCase();
       return aName.localeCompare(bName);
     });
 
     renderCountries();
     state.countryModal.hide();
     hideAlert(countriesMessage);
+    clearCountryFormMessage();
+    state.countryDrafts = {
+      en: { name: '', description: '' },
+      bg: { name: '', description: '' }
+    };
   } finally {
-    countryFormSubmit.disabled = false;
+    submitButton.disabled = false;
+    submitButton.textContent = submitLabel;
   }
 }
 
@@ -470,6 +613,26 @@ function wireEvents() {
   });
 
   countryForm.addEventListener('submit', handleCountryFormSubmit);
+
+  inputLanguageSelect.addEventListener('change', () => {
+    const countryId = countryIdInput.value;
+    const country = state.countries.find((item) => String(item.id) === String(countryId)) || null;
+
+    inputLanguageSelect.value = 'en';
+    const selectedLanguage = 'en';
+
+    updateCurrentCountryDraft();
+
+    if (countryId && country) {
+      syncCountryFormFieldsForLanguage(selectedLanguage, country);
+      return;
+    }
+
+    syncCountryFormFieldsForLanguage(selectedLanguage);
+  });
+
+  countryNameInput.addEventListener('input', updateCurrentCountryDraft);
+  countryDescriptionInput.addEventListener('input', updateCurrentCountryDraft);
 
   pendingPostsTbody.addEventListener('click', async (event) => {
     const actionButton = event.target.closest('button');
@@ -570,5 +733,22 @@ function initAdminDashboard() {
   wireEvents();
   ensureAdmin();
 }
+
+document.addEventListener('languagechange', () => {
+  if (state.pendingPosts.length) {
+    renderPendingPosts();
+  }
+
+  if (state.countries.length) {
+    renderCountries();
+  }
+
+  if (countryIdInput.value) {
+    const country = state.countries.find((item) => String(item.id) === String(countryIdInput.value)) || null;
+    if (country) {
+      syncCountryFormFieldsForLanguage(getSelectedLanguage(), country);
+    }
+  }
+});
 
 initAdminDashboard();

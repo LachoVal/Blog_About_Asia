@@ -2,11 +2,14 @@ import { mountFooter } from '/src/components/footer/footer.js';
 import { mountHeader } from '/src/components/header/header.js';
 import { requireSupabase } from '/src/lib/supabaseClient.js';
 import { getLoginPath } from '/src/lib/auth.js';
+import { translate } from '/src/lib/i18n.js';
 
 mountHeader('#app-header');
 mountFooter('#app-footer');
 
-const grid = document.querySelector('#destinationsGrid');
+document.title = `${translate('exploreAsianDestinations')} | Asian Travel Blog`;
+
+const grid = document.querySelector('#countries-container') || document.querySelector('#destinationsGrid');
 const loading = document.querySelector('#destinations-loading');
 const message = document.querySelector('#destinations-message');
 
@@ -29,6 +32,17 @@ function hideLoading() {
   loading.classList.add('d-none');
 }
 
+function getSelectedLanguage() {
+  return localStorage.getItem('selectedLang') || localStorage.getItem('lang') || 'en';
+}
+
+function getLocalizedCountryValue(country, language, baseKey) {
+  const localizedKey = `${baseKey}_${language}`;
+  const fallbackKey = `${baseKey}_en`;
+
+  return country[localizedKey] || country[fallbackKey] || '';
+}
+
 function toCountryFilterHref(countryId) {
   return `/country-articles.html?country_id=${encodeURIComponent(countryId)}`;
 }
@@ -46,7 +60,7 @@ function createCountryCard(country) {
   const image = document.createElement('img');
   image.className = 'card-img-top';
   image.src = country.image_url || IMAGE_PLACEHOLDER;
-  image.alt = country.name || 'Country image';
+  image.alt = country.name || translate('postCoverImage');
   image.style.height = '250px';
   image.style.objectFit = 'cover';
 
@@ -57,16 +71,16 @@ function createCountryCard(country) {
 
   const title = document.createElement('h2');
   title.className = 'h5 card-title';
-  title.textContent = country.name || 'Unnamed Destination';
+  title.textContent = country.name || translate('unknownCountry');
 
   const description = document.createElement('p');
   description.className = 'card-text text-body-secondary';
-  description.textContent = country.description || 'No description available yet.';
+  description.textContent = country.description || translate('unknownContent');
 
   const button = document.createElement('a');
   button.className = 'btn btn-primary mt-auto';
   button.href = currentUser ? toCountryFilterHref(country.id) : getLoginPath();
-  button.textContent = currentUser ? 'See Posts' : 'Login to View Posts';
+  button.textContent = translate('read');
 
   cardBody.append(title, description, button);
   card.append(imageLink, cardBody);
@@ -79,7 +93,7 @@ function renderDestinations(countries) {
   grid.innerHTML = '';
 
   if (!countries.length) {
-    showMessage('No destinations found.');
+    showMessage(translate('noDestinationsFound'));
     return;
   }
 
@@ -94,8 +108,8 @@ function renderDestinations(countries) {
 async function fetchCountries(supabase) {
   const { data, error } = await supabase
     .from('countries')
-    .select('id, name, description, image_url')
-    .order('name', { ascending: true });
+    .select('id, name_en, description_en, name_bg, description_bg, image_url')
+    .order('name_en', { ascending: true });
 
   if (error) {
     throw new Error(error.message);
@@ -104,27 +118,50 @@ async function fetchCountries(supabase) {
   return data || [];
 }
 
-async function init() {
+function normalizeCountriesForLanguage(countries, language) {
+  return countries.map((country) => ({
+    ...country,
+    name: getLocalizedCountryValue(country, language, 'name'),
+    description: getLocalizedCountryValue(country, language, 'description')
+  }));
+}
+
+async function fetchAndRenderCountries() {
   hideMessage();
 
   const supabase = requireSupabase();
   if (!supabase) {
     hideLoading();
-    showMessage('Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env.');
+    showMessage(translate('supabaseMissing'));
     return;
   }
 
-  const { data: sessionData } = await supabase.auth.getSession();
-  currentUser = sessionData?.session?.user || null;
+  const language = getSelectedLanguage();
 
   try {
     const countries = await fetchCountries(supabase);
+    const localizedCountries = normalizeCountriesForLanguage(countries, language);
     hideLoading();
-    renderDestinations(countries);
+    renderDestinations(localizedCountries);
+    document.title = `${translate('exploreAsianDestinations', language)} | Asian Travel Blog`;
   } catch (error) {
     hideLoading();
-    showMessage(error?.message || 'Failed to load destinations.');
+    showMessage(error?.message || translate('failedLoadCountryPosts'));
   }
 }
+
+async function init() {
+  const supabase = requireSupabase();
+  if (supabase) {
+    const { data: sessionData } = await supabase.auth.getSession();
+    currentUser = sessionData?.session?.user || null;
+  }
+
+  await fetchAndRenderCountries();
+}
+
+document.addEventListener('languagechange', () => {
+  fetchAndRenderCountries();
+});
 
 init();

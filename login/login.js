@@ -1,12 +1,18 @@
 import { mountFooter } from '/src/components/footer/footer.js';
 import { mountHeader } from '/src/components/header/header.js';
 import { requireSupabase } from '/src/lib/supabaseClient.js';
+import { translate } from '/src/lib/i18n.js';
 
 mountHeader('#app-header');
 mountFooter('#app-footer');
 
 const form = document.querySelector('#login-form');
 const message = document.querySelector('#login-message');
+
+function setMessage(text, variant = 'secondary') {
+  message.className = `mt-3 mb-0 text-${variant}`;
+  message.textContent = text;
+}
 
 async function redirectIfAuthenticated() {
   const supabase = requireSupabase();
@@ -20,12 +26,13 @@ async function redirectIfAuthenticated() {
   }
 }
 
-redirectIfAuthenticated();
+document.addEventListener('DOMContentLoaded', () => {
+  redirectIfAuthenticated();
+});
 
 form.addEventListener('submit', async (event) => {
   event.preventDefault();
-  message.className = 'mt-3 mb-0 text-body-secondary';
-  message.textContent = 'Signing in...';
+  setMessage(translate('signingIn'));
 
   const supabase = requireSupabase();
   const formData = new FormData(form);
@@ -33,25 +40,21 @@ form.addEventListener('submit', async (event) => {
   const password = String(formData.get('password') || '');
 
   if (!supabase) {
-    message.className = 'mt-3 mb-0 text-warning';
-    message.textContent = 'Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env.';
+    setMessage(translate('supabaseMissing'), 'warning');
     return;
   }
 
   if (!email || !password) {
-    message.className = 'mt-3 mb-0 text-warning';
-    message.textContent = 'Please provide both email and password.';
+    setMessage(translate('loginMissingFields'), 'warning');
     return;
   }
 
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) {
-    message.className = 'mt-3 mb-0 text-danger';
-    message.textContent = error.message;
+    setMessage(error.message, 'danger');
     return;
   }
 
-  message.className = 'mt-3 mb-0 text-success';
-  message.textContent = 'Login successful. Redirecting...';
+  setMessage(translate('loginSuccess'), 'success');
   window.location.assign('/');
 });

@@ -1,9 +1,12 @@
 import { mountFooter } from '/src/components/footer/footer.js';
 import { mountHeader } from '/src/components/header/header.js';
 import { requireSupabase } from '/src/lib/supabaseClient.js';
+import { translate } from '/src/lib/i18n.js';
 
 mountHeader('#app-header');
 mountFooter('#app-footer');
+
+document.title = `${translate('updatePasswordTitle')} | Asian Travel Blog`;
 
 const form = document.querySelector('#change-password-form');
 const message = document.querySelector('#change-password-message');
@@ -28,12 +31,12 @@ requireSession();
 form.addEventListener('submit', async (event) => {
   event.preventDefault();
   message.className = 'mt-3 mb-0 text-body-secondary';
-  message.textContent = 'Updating password...';
+  message.textContent = translate('updatePasswordAction') + '...';
 
   const supabase = requireSupabase();
   if (!supabase) {
     message.className = 'mt-3 mb-0 text-warning';
-    message.textContent = 'Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env.';
+    message.textContent = translate('supabaseMissing');
     return;
   }
 
@@ -44,27 +47,27 @@ form.addEventListener('submit', async (event) => {
 
   if (!oldPassword) {
     message.className = 'mt-3 mb-0 text-danger';
-    message.textContent = 'Please enter your old password.';
+    message.textContent = translate('oldPasswordLabel');
     return;
   }
 
   // Validate passwords match
   if (newPassword !== confirmPassword) {
     message.className = 'mt-3 mb-0 text-danger';
-    message.textContent = 'Passwords do not match.';
+    message.textContent = translate('registerInvalidEmail');
     return;
   }
 
   // Validate password length
   if (newPassword.length < 6) {
     message.className = 'mt-3 mb-0 text-danger';
-    message.textContent = 'Password must be at least 6 characters long.';
+    message.textContent = translate('atLeast6Characters');
     return;
   }
 
   if (oldPassword === newPassword) {
     message.className = 'mt-3 mb-0 text-danger';
-    message.textContent = 'New password must be different from old password.';
+    message.textContent = translate('newPasswordLabel');
     return;
   }
 
@@ -85,7 +88,7 @@ form.addEventListener('submit', async (event) => {
 
   if (verifyError) {
     message.className = 'mt-3 mb-0 text-danger';
-    message.textContent = 'Old password is incorrect.';
+    message.textContent = translate('oldPasswordLabel');
     return;
   }
 
@@ -98,7 +101,7 @@ form.addEventListener('submit', async (event) => {
   }
 
   message.className = 'mt-3 mb-0 text-success';
-  message.textContent = 'Password updated successfully! Redirecting...';
+  message.textContent = translate('loginSuccess');
   setTimeout(() => {
     window.location.assign('/');
   }, 1500);

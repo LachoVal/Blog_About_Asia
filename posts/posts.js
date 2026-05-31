@@ -3,9 +3,12 @@ import { mountHeader } from '/src/components/header/header.js';
 import { getPostIdFromRoute } from '/src/router/router.js';
 import { requireSupabase } from '/src/lib/supabaseClient.js';
 import { Modal } from 'bootstrap';
+import { translate } from '/src/lib/i18n.js';
 
 mountHeader('#app-header');
 mountFooter('#app-footer');
+
+document.title = `${translate('readPostLabel')} | Asian Travel Blog`;
 
 const COVER_PLACEHOLDER = 'https://images.unsplash.com/photo-1526481280695-3c4691f5e66c?auto=format&fit=crop&w=1600&q=80';
 
@@ -120,10 +123,13 @@ function clearEditModalMessage() {
 
 function formatPublishedDate(value) {
   if (!value) {
-    return 'Unknown date';
+    return translate('unknownDate');
   }
 
-  return new Intl.DateTimeFormat('en-US', {
+  const language = localStorage.getItem('selectedLang') || localStorage.getItem('lang') || 'en';
+  const locale = language === 'bg' ? 'bg-BG' : 'en-US';
+
+  return new Intl.DateTimeFormat(locale, {
     year: 'numeric',
     month: 'long',
     day: 'numeric'
@@ -135,7 +141,10 @@ function formatCommentDate(value) {
     return '';
   }
 
-  return new Intl.DateTimeFormat('en-US', {
+  const language = localStorage.getItem('selectedLang') || localStorage.getItem('lang') || 'en';
+  const locale = language === 'bg' ? 'bg-BG' : 'en-US';
+
+  return new Intl.DateTimeFormat(locale, {
     dateStyle: 'medium',
     timeStyle: 'short'
   }).format(new Date(value));
@@ -153,7 +162,7 @@ function escapeHtml(content) {
 function toParagraphs(text) {
   const normalized = String(text || '').trim();
   if (!normalized) {
-    return '<p class="text-body-secondary mb-0">No content available.</p>';
+    return `<p class="text-body-secondary mb-0">${translate('unknownContent')}</p>`;
   }
 
   return normalized
@@ -170,10 +179,14 @@ function showPostNotFound() {
 
 function renderPost(post) {
   postCoverImage.src = post.image_url || COVER_PLACEHOLDER;
-  postCoverImage.alt = post.title || 'Travel post cover image';
-  postTitle.textContent = post.title || 'Untitled Post';
-  postCountry.textContent = post?.countries?.name || 'Unknown Country';
-  postAuthor.textContent = post?.profiles?.username || 'Unknown Author';
+  postCoverImage.alt = post.title || translate('postCoverImage');
+  postTitle.textContent = post.title || translate('unknownPost');
+  const language = localStorage.getItem('selectedLang') || localStorage.getItem('lang') || 'en';
+  const country = Array.isArray(post?.countries) ? post.countries[0] : post?.countries;
+  postCountry.textContent = language === 'bg'
+    ? country?.name_bg || country?.name_en || translate('unknownCountry')
+    : country?.name_en || country?.name_bg || translate('unknownCountry');
+  postAuthor.textContent = post?.profiles?.username || translate('unknownAuthor');
   postDate.textContent = formatPublishedDate(post.created_at);
   postContent.innerHTML = toParagraphs(post.content);
 
@@ -205,7 +218,7 @@ async function loadCurrentUser() {
 async function fetchPostById(postId) {
   const { data, error } = await state.supabase
     .from('posts')
-    .select('id, title, content, image_url, created_at, author_id, country_id, is_approved, profiles!posts_author_id_fkey(username), countries!posts_country_id_fkey(name)')
+    .select('id, title, content, image_url, created_at, author_id, country_id, is_approved, profiles!posts_author_id_fkey(username), countries!posts_country_id_fkey(name_en, name_bg)')
     .eq('id', postId)
     .maybeSingle();
 
@@ -237,7 +250,7 @@ function updateFavoriteButtonUI() {
   if (!isLoggedIn) {
     favoriteButton.className = 'btn btn-outline-danger btn-lg';
     favoriteIcon.textContent = '♡';
-    favoriteLabel.textContent = 'Login to Add Favorite';
+    favoriteLabel.textContent = translate('loginToAddFavorite');
     return;
   }
 
@@ -250,7 +263,7 @@ function updateFavoriteButtonUI() {
 
   favoriteButton.className = isFavorite ? 'btn btn-danger btn-lg' : 'btn btn-outline-danger btn-lg';
   favoriteIcon.textContent = isFavorite ? '♥' : '♡';
-  favoriteLabel.textContent = isFavorite ? 'Remove from Favorites' : 'Add to Favorites';
+  favoriteLabel.textContent = isFavorite ? translate('removeFromFavorites') : translate('addToFavorites');
 }
 
 async function syncFavoriteState() {
@@ -284,7 +297,7 @@ async function toggleFavorite() {
   }
 
   if (!state.currentUser || !state.post?.id) {
-    setTextMessage(favoriteMessage, 'Please log in to manage favorites.', 'warning');
+    setTextMessage(favoriteMessage, translate('loginToManageFavorites'), 'warning');
     return;
   }
 
@@ -308,7 +321,7 @@ async function toggleFavorite() {
     state.favoriteId = null;
     updateFavoriteButtonUI();
     favoriteButton.disabled = false;
-    setTextMessage(favoriteMessage, 'Removed from favorites.', 'success');
+    setTextMessage(favoriteMessage, translate('removedFromFavorites'), 'success');
     return;
   }
 
@@ -327,7 +340,7 @@ async function toggleFavorite() {
   state.favoriteId = data.id;
   updateFavoriteButtonUI();
   favoriteButton.disabled = false;
-  setTextMessage(favoriteMessage, 'Added to favorites.', 'success');
+  setTextMessage(favoriteMessage, translate('addedToFavorites'), 'success');
 }
 
 function canEditComment(comment) {
@@ -411,9 +424,9 @@ function createCommentElement(comment) {
       const editButton = document.createElement('button');
       editButton.type = 'button';
       editButton.className = 'btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1';
-      editButton.setAttribute('aria-label', 'Edit comment');
-      editButton.title = 'Edit comment';
-      editButton.innerHTML = '<span aria-hidden="true">✏️</span><span>Edit</span>';
+      editButton.setAttribute('aria-label', translate('editComment'));
+      editButton.title = translate('editComment');
+      editButton.innerHTML = `<span aria-hidden="true">✏️</span><span>${translate('editComment')}</span>`;
       editButton.addEventListener('click', () => openEditModal(comment.id, comment.content));
       actions.append(editButton);
     }
@@ -422,9 +435,9 @@ function createCommentElement(comment) {
       const deleteButton = document.createElement('button');
       deleteButton.type = 'button';
       deleteButton.className = 'btn btn-sm btn-outline-danger d-inline-flex align-items-center gap-1';
-      deleteButton.setAttribute('aria-label', 'Delete comment');
-      deleteButton.title = 'Delete comment';
-      deleteButton.innerHTML = '<span aria-hidden="true">🗑️</span><span>Delete</span>';
+      deleteButton.setAttribute('aria-label', translate('deleteComment'));
+      deleteButton.title = translate('deleteComment');
+      deleteButton.innerHTML = `<span aria-hidden="true">🗑️</span><span>${translate('deleteComment')}</span>`;
       deleteButton.addEventListener('click', () => handleDeleteComment(comment));
       actions.append(deleteButton);
     }
@@ -701,6 +714,16 @@ async function init() {
     showGlobalAlert(error.message || 'Something went wrong while loading the post.', 'danger');
   }
 }
+
+document.addEventListener('languagechange', () => {
+  if (!state.post) {
+    return;
+  }
+
+  renderPost(state.post);
+  renderComments();
+  setupAuthDependentUI();
+});
 
 favoriteButton.addEventListener('click', toggleFavorite);
 commentForm.addEventListener('submit', handleAddComment);

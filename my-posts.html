@@ -15,10 +15,10 @@
 
     <main class="container py-4 py-md-5">
       <section class="my-posts-top d-flex justify-content-between align-items-center mb-4">
-        <h2 class="mb-0">My Posts</h2>
+        <h2 class="mb-0" data-i18n="myPostsTitle">My Posts</h2>
         <button id="create-post-button" type="button" class="btn btn-primary">
           <i class="bi bi-plus-lg me-2"></i>
-          Create Post
+          <span data-i18n="createPostButton">Create Post</span>
         </button>
       </section>
 
@@ -28,9 +28,9 @@
         <table class="table table-hover align-middle">
           <thead>
             <tr>
-              <th scope="col">Title</th>
-              <th scope="col">Status</th>
-              <th scope="col" class="text-end">Actions</th>
+              <th scope="col" data-i18n="titleLabel">Title</th>
+              <th scope="col" data-i18n="statusLabel">Status</th>
+              <th scope="col" class="text-end" data-i18n="actionsLabel">Actions</th>
             </tr>
           </thead>
           <tbody id="my-posts-tbody"></tbody>
@@ -41,40 +41,46 @@
         <div class="modal-dialog modal-lg modal-dialog-centered">
           <div class="modal-content">
             <div class="modal-header">
-              <h5 class="modal-title" id="postEditorModalLabel">Create Post</h5>
-              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              <h5 class="modal-title" id="postEditorModalLabel" data-i18n="createPostModalTitle">Create Post</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" data-i18n-aria-label="close"></button>
             </div>
             <form id="post-editor-form">
               <div class="modal-body">
                 <input type="hidden" id="editor-post-id" />
 
                 <div class="mb-3">
-                  <label for="editor-post-title" class="form-label">Title</label>
+                  <label for="editor-post-title" class="form-label" data-i18n="titleLabel">Title</label>
                   <input id="editor-post-title" type="text" class="form-control" required />
                 </div>
 
                 <div class="mb-3">
-                  <label for="editor-post-content" class="form-label">Content</label>
+                  <label for="editor-post-content" class="form-label" data-i18n="postContentLabel">Content</label>
                   <textarea id="editor-post-content" class="form-control" rows="5" required></textarea>
                 </div>
 
                 <div class="mb-3">
-                  <label for="editor-post-country" class="form-label">Country</label>
+                  <label for="editor-post-country" class="form-label" data-i18n="postCountryLabel">Country</label>
                   <select id="editor-post-country" class="form-select" required>
-                    <option value="">Select a country</option>
+                    <option value="" data-i18n="postCountryPlaceholder">Select a country</option>
                   </select>
                 </div>
 
                 <div class="mb-1">
-                  <label for="editor-post-photo" class="form-label">Photo Attachment</label>
-                  <input id="editor-post-photo" type="file" class="form-control" accept="image/*" />
+                  <label for="editor-post-photo" class="form-label" data-i18n="postPhotoLabel">Photo Attachment</label>
+                  <div class="d-flex flex-column gap-2">
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                      <button type="button" class="btn btn-outline-secondary btn-sm" id="editor-post-photo-browse" data-i18n="chooseFile">Choose File</button>
+                      <span id="editor-post-photo-name" class="text-muted small" data-i18n="noFileChosen">No file chosen</span>
+                    </div>
+                    <input id="editor-post-photo" type="file" class="d-none" accept="image/*" />
+                  </div>
                 </div>
 
                 <p id="post-editor-message" class="small mt-3 mb-0"></p>
               </div>
               <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button id="post-editor-submit" type="submit" class="btn btn-primary">Save</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="cancel">Cancel</button>
+                <button id="post-editor-submit" type="submit" class="btn btn-primary" data-i18n="saveLabel">Save</button>
               </div>
             </form>
           </div>

@@ -12,21 +12,21 @@
     <main class="auth-page py-4 py-md-5">
       <div class="container auth-window d-flex align-items-center justify-content-center">
         <section class="auth-card p-4 p-md-5 shadow-sm">
-          <h1 class="auth-title mb-2 text-center">Welcome Back</h1>
-          <p class="auth-subtitle text-body-secondary text-center mb-4">Sign in to continue exploring Asia travel stories.</p>
+          <h1 class="auth-title mb-2 text-center" data-i18n="welcomeBack">Добре дошли</h1>
+          <p class="auth-subtitle text-body-secondary text-center mb-4" data-i18n="loginSubtitleShort">Влезте, за да продължите да разглеждате истории за пътувания из Азия.</p>
 
           <form id="login-form" class="row g-3">
             <div class="col-12">
-              <label for="email" class="form-label">Email</label>
-              <input id="email" name="email" type="email" class="form-control form-control-lg" autocomplete="email" required />
+              <label for="email" class="form-label" data-i18n="emailLabel">Имейл</label>
+              <input id="email" name="email" type="email" class="form-control form-control-lg" autocomplete="email" data-i18n="emailPlaceholder" placeholder="Въведете имейл" required />
             </div>
             <div class="col-12">
-              <label for="password" class="form-label">Password</label>
-              <input id="password" name="password" type="password" class="form-control form-control-lg" autocomplete="current-password" required />
+              <label for="password" class="form-label" data-i18n="passwordLabel">Парола</label>
+              <input id="password" name="password" type="password" class="form-control form-control-lg" autocomplete="current-password" data-i18n="passwordPlaceholder" placeholder="Въведете парола" required />
             </div>
             <div class="col-12 d-grid gap-2 mt-2">
-              <button class="btn btn-primary btn-lg" type="submit">Sign In</button>
-              <a class="btn btn-outline-secondary" href="/register/index.html">Create account</a>
+              <button class="btn btn-primary btn-lg" type="submit" data-i18n="signIn">Вход</button>
+              <a class="btn btn-outline-secondary" href="/register/index.html" data-i18n="createAccount">Създай акаунт</a>
             </div>
           </form>
 

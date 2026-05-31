@@ -3,9 +3,12 @@ import { mountFooter } from '/src/components/footer/footer.js';
 import { mountHeader } from '/src/components/header/header.js';
 import { requireSupabase } from '/src/lib/supabaseClient.js';
 import { getLoginPath, redirectGuestFromProtectedPage } from '/src/lib/auth.js';
+import { translate } from '/src/lib/i18n.js';
 
 mountHeader('#app-header', '/my-posts.html');
 mountFooter('#app-footer');
+
+document.title = `${translate('myPostsTitle')} | Asian Travel Blog`;
 
 const tableWrap = document.querySelector('#my-posts-table-wrap');
 const tableBody = document.querySelector('#my-posts-tbody');
@@ -19,6 +22,8 @@ const editorPostTitle = document.querySelector('#editor-post-title');
 const editorPostContent = document.querySelector('#editor-post-content');
 const editorPostCountry = document.querySelector('#editor-post-country');
 const editorPostPhoto = document.querySelector('#editor-post-photo');
+const editorPostPhotoBrowse = document.querySelector('#editor-post-photo-browse');
+const editorPostPhotoName = document.querySelector('#editor-post-photo-name');
 const postEditorSubmit = document.querySelector('#post-editor-submit');
 const postEditorMessage = document.querySelector('#post-editor-message');
 
@@ -52,6 +57,15 @@ function clearEditorMessage() {
   postEditorMessage.textContent = '';
 }
 
+function updateEditorPostPhotoLabel() {
+  if (!editorPostPhoto || !editorPostPhotoName) {
+    return;
+  }
+
+  const selectedFile = editorPostPhoto.files?.[0];
+  editorPostPhotoName.textContent = selectedFile?.name || translate('noFileChosen');
+}
+
 function resetEditorForm() {
   editorPostId.value = '';
   editorPostTitle.value = '';
@@ -64,18 +78,19 @@ function resetEditorForm() {
 function openCreateModal() {
   state.editorMode = 'create';
   resetEditorForm();
-  postEditorModalLabel.textContent = 'Create Post';
-  postEditorSubmit.textContent = 'Create';
+  postEditorModalLabel.textContent = translate('createPostModalTitle');
+  postEditorSubmit.textContent = translate('createLabel');
+  updateEditorPostPhotoLabel();
   state.editorModal.show();
 }
 
 async function openEditModal(postId) {
   state.editorMode = 'edit';
   resetEditorForm();
-  postEditorModalLabel.textContent = 'Edit Post';
-  postEditorSubmit.textContent = 'Save Changes';
+  postEditorModalLabel.textContent = translate('editPostLabel');
+  postEditorSubmit.textContent = translate('saveChanges');
 
-  setEditorMessage('Loading post...', 'secondary');
+  setEditorMessage(translate('loadingPostForEditing'), 'secondary');
   const { data, error } = await state.supabase
     .from('posts')
     .select('id, title, content, country_id')
@@ -84,7 +99,7 @@ async function openEditModal(postId) {
     .maybeSingle();
 
   if (error || !data) {
-    setEditorMessage(error?.message || 'Unable to load this post.', 'danger');
+    setEditorMessage(error?.message || translate('failedLoadCountryPosts'), 'danger');
     return;
   }
 
@@ -93,6 +108,7 @@ async function openEditModal(postId) {
   editorPostContent.value = data.content || '';
   editorPostCountry.value = data.country_id ? String(data.country_id) : '';
   clearEditorMessage();
+  updateEditorPostPhotoLabel();
   state.editorModal.show();
 }
 
@@ -101,12 +117,15 @@ function populateCountryOptions(countries) {
     return;
   }
 
-  editorPostCountry.innerHTML = '<option value="">Select a country</option>';
+  const language = localStorage.getItem('selectedLang') || localStorage.getItem('lang') || 'en';
+  editorPostCountry.innerHTML = `<option value="">${translate('postCountryPlaceholder')}</option>`;
 
   countries.forEach((country) => {
     const option = document.createElement('option');
     option.value = country.id;
-    option.textContent = country.name;
+    option.textContent = language === 'bg'
+      ? country.name_bg || country.name_en || ''
+      : country.name_en || country.name_bg || '';
     editorPostCountry.appendChild(option);
   });
 }
@@ -124,10 +143,10 @@ function fileToDataUrl(file) {
 
 function renderStatusBadge(isApproved) {
   if (isApproved) {
-    return '<span class="badge bg-success">Published</span>';
+    return `<span class="badge bg-success">${translate('statusPublished')}</span>`;
   }
 
-  return '<span class="badge bg-warning text-dark">Pending Approval</span>';
+  return `<span class="badge bg-warning text-dark">${translate('statusPending')}</span>`;
 }
 
 function initTooltips() {
@@ -140,7 +159,7 @@ function initTooltips() {
 function renderPostsTable(posts) {
   if (!Array.isArray(posts) || posts.length === 0) {
     tableWrap.classList.add('d-none');
-    showMessage("You haven't written any posts yet.", 'light');
+    showMessage(translate('noMyPostsYet'), 'light');
     return;
   }
 
@@ -156,9 +175,9 @@ function renderPostsTable(posts) {
               <a
                 class="btn btn-primary btn-sm"
                 href="/post.html?id=${post.id}"
-                aria-label="Read post"
+                aria-label="${translate('readLabel')}"
                 data-bs-toggle="tooltip"
-                data-bs-title="Read"
+                data-bs-title="${translate('readLabel')}"
               >
                 <i class="bi bi-eye" aria-hidden="true"></i>
               </a>
@@ -166,9 +185,9 @@ function renderPostsTable(posts) {
                 type="button"
                 class="btn btn-warning btn-sm js-edit-post"
                 data-post-id="${post.id}"
-                aria-label="Edit post"
+                aria-label="${translate('editLabel')}"
                 data-bs-toggle="tooltip"
-                data-bs-title="Edit"
+                data-bs-title="${translate('editLabel')}"
               >
                 <i class="bi bi-pencil" aria-hidden="true"></i>
               </button>
@@ -176,9 +195,9 @@ function renderPostsTable(posts) {
                 type="button"
                 class="btn btn-danger btn-sm js-delete-post"
                 data-post-id="${post.id}"
-                aria-label="Delete post"
+                aria-label="${translate('deleteLabel')}"
                 data-bs-toggle="tooltip"
-                data-bs-title="Delete"
+                data-bs-title="${translate('deleteLabel')}"
               >
                 <i class="bi bi-trash" aria-hidden="true"></i>
               </button>
@@ -221,12 +240,17 @@ async function fetchMyPosts() {
 }
 
 async function loadCountries() {
-  const { data, error } = await state.supabase.from('countries').select('id, name').order('name', { ascending: true });
+  const language = localStorage.getItem('selectedLang') || localStorage.getItem('lang') || 'en';
+  const { data, error } = await state.supabase.from('countries').select('id, name_en, name_bg').order('name_en', { ascending: true });
   if (error) {
     throw new Error(error.message);
   }
 
   state.countries = data || [];
+  state.countries = state.countries.map((country) => ({
+    ...country,
+    name: language === 'bg' ? country.name_bg || country.name_en || '' : country.name_en || country.name_bg || ''
+  }));
   populateCountryOptions(state.countries);
 }
 
@@ -243,7 +267,7 @@ function removeRowFromDom(postId) {
 }
 
 async function handleDelete(postId) {
-  const shouldDelete = window.confirm('Are you sure you want to delete this post?');
+  const shouldDelete = window.confirm(translate('confirmDeletePost'));
   if (!shouldDelete) {
     return;
   }
@@ -267,17 +291,17 @@ async function handleEditorSubmit(event) {
   const selectedFile = editorPostPhoto.files?.[0] || null;
 
   if (!title || !content) {
-    setEditorMessage('Title and content are required.', 'danger');
+    setEditorMessage(translate('postTitleRequired'), 'danger');
     return;
   }
 
   if (!selectedCountryId) {
-    setEditorMessage('Please select a country.', 'danger');
+    setEditorMessage(translate('selectCountryLabel'), 'danger');
     return;
   }
 
   postEditorSubmit.disabled = true;
-  setEditorMessage(state.editorMode === 'edit' ? 'Saving changes...' : 'Creating post...', 'secondary');
+  setEditorMessage(state.editorMode === 'edit' ? translate('savingChangesLabel') : translate('creatingPostAgain'), 'secondary');
 
   let imageUrl;
   if (selectedFile) {
@@ -285,7 +309,7 @@ async function handleEditorSubmit(event) {
       imageUrl = await fileToDataUrl(selectedFile);
     } catch (error) {
       postEditorSubmit.disabled = false;
-      setEditorMessage(error instanceof Error ? error.message : 'Unable to read selected file.', 'danger');
+      setEditorMessage(error instanceof Error ? error.message : translate('unableToReadFile'), 'danger');
       return;
     }
   }
@@ -294,7 +318,7 @@ async function handleEditorSubmit(event) {
     const postId = editorPostId.value;
     if (!postId) {
       postEditorSubmit.disabled = false;
-      setEditorMessage('Missing post id.', 'danger');
+      setEditorMessage(translate('missingPostId'), 'danger');
       return;
     }
 
@@ -352,6 +376,15 @@ async function handleEditorSubmit(event) {
   postEditorSubmit.disabled = false;
 }
 
+function wireEditorPhotoPicker() {
+  editorPostPhotoBrowse?.addEventListener('click', () => {
+    editorPostPhoto?.click();
+  });
+
+  editorPostPhoto?.addEventListener('change', updateEditorPostPhotoLabel);
+  document.addEventListener('languagechange', updateEditorPostPhotoLabel);
+}
+
 function setupActions() {
   if (createPostButton) {
     createPostButton.addEventListener('click', () => {
@@ -400,6 +433,17 @@ async function init() {
   }
 
   state.editorModal = new Modal(postEditorModalElement);
+  wireEditorPhotoPicker();
+
+  document.addEventListener('languagechange', () => {
+    if (state.posts.length) {
+      renderPostsTable(state.posts);
+    }
+
+    if (state.countries.length) {
+      populateCountryOptions(state.countries);
+    }
+  });
 
   try {
     await loadCountries();

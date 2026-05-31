@@ -2,9 +2,12 @@ import { mountFooter } from '/src/components/footer/footer.js';
 import { mountHeader } from '/src/components/header/header.js';
 import { requireSupabase } from '/src/lib/supabaseClient.js';
 import { getLoginPath, redirectGuestFromProtectedPage } from '/src/lib/auth.js';
+import { translate } from '/src/lib/i18n.js';
 
 mountHeader('#app-header');
 mountFooter('#app-footer');
+
+document.title = `${translate('createNewPostTitle')} | Asian Travel Blog`;
 
 const form = document.querySelector('#create-post-form');
 const message = document.querySelector('#create-post-message');
@@ -60,10 +63,11 @@ async function populateCountryOptions(supabase, selectedCountryId) {
     return;
   }
 
+  const language = localStorage.getItem('selectedLang') || localStorage.getItem('lang') || 'en';
   const { data, error } = await supabase
     .from('countries')
-    .select('id, name')
-    .order('name', { ascending: true });
+    .select('id, name_en, name_bg')
+    .order('name_en', { ascending: true });
 
   if (error) {
     message.className = 'mt-3 mb-0 text-danger';
@@ -71,11 +75,13 @@ async function populateCountryOptions(supabase, selectedCountryId) {
     return;
   }
 
-  countrySelect.innerHTML = '<option value="">Select a country</option>';
+  countrySelect.innerHTML = `<option value="">${translate('postCountryPlaceholder')}</option>`;
   (data || []).forEach((country) => {
     const option = document.createElement('option');
     option.value = String(country.id);
-    option.textContent = country.name;
+    option.textContent = language === 'bg'
+      ? country.name_bg || country.name_en || ''
+      : country.name_en || country.name_bg || '';
     countrySelect.appendChild(option);
   });
 
@@ -96,10 +102,10 @@ async function loadPostForEditing() {
     return;
   }
 
-  heading.textContent = 'Edit Post';
-  submitButton.textContent = 'Save Changes';
+  heading.textContent = translate('editPost');
+  submitButton.textContent = translate('saveChanges');
   message.className = 'mt-3 mb-0 text-body-secondary';
-  message.textContent = 'Loading post...';
+  message.textContent = translate('loadingPost');
 
   const { data, error } = await supabase
     .from('posts')
@@ -109,7 +115,7 @@ async function loadPostForEditing() {
 
   if (error || !data) {
     message.className = 'mt-3 mb-0 text-danger';
-    message.textContent = error?.message || 'Unable to load this post for editing.';
+    message.textContent = error?.message || translate('failedLoadCountryPosts');
     return;
   }
 
@@ -129,7 +135,7 @@ async function loadPostForEditing() {
   }
 
   message.className = 'mt-3 mb-0 text-success';
-  message.textContent = 'Editing mode enabled.';
+  message.textContent = translate('editModeEnabled');
 }
 
 loadPostForEditing();
@@ -137,7 +143,7 @@ loadPostForEditing();
 form.addEventListener('submit', async (event) => {
   event.preventDefault();
   message.className = 'mt-3 mb-0 text-body-secondary';
-  message.textContent = editPostId ? 'Saving changes...' : 'Publishing...';
+  message.textContent = editPostId ? translate('editingPost') : translate('publishingPost');
 
   const { supabase, session } = await getAuthenticatedSession();
   if (!supabase || !session) {
@@ -155,9 +161,10 @@ form.addEventListener('submit', async (event) => {
     ? (typeof imageUrlValue === 'string' && imageUrlValue.trim() ? imageUrlValue.trim() : null)
     : (state.loadedPost?.image_url ?? null);
   const parsedCountryId = Number(countryIdValue);
+  const fallbackCountryId = state.loadedPost?.country_id ?? null;
   const country_id = hasCountryInput
-    ? (Number.isInteger(parsedCountryId) && parsedCountryId > 0 ? parsedCountryId : null)
-    : (state.loadedPost?.country_id ?? null);
+    ? (Number.isInteger(parsedCountryId) && parsedCountryId > 0 ? parsedCountryId : fallbackCountryId)
+    : fallbackCountryId;
 
   let error;
   if (editPostId) {
@@ -178,12 +185,12 @@ form.addEventListener('submit', async (event) => {
   }
 
   if (editPostId) {
-    alert('Post updated and sent for admin review');
+    alert(translate('postUpdatedSentReview'));
     window.location.replace('/my-posts.html');
     return;
   }
 
   form.reset();
   message.className = 'mt-3 mb-0 text-success';
-  message.textContent = 'Post published.';
+  message.textContent = translate('postPublished');
 });
