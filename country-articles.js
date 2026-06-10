@@ -15,12 +15,18 @@ const loading = document.querySelector('#articles-loading');
 const message = document.querySelector('#articles-message');
 const empty = document.querySelector('#articles-empty');
 const grid = document.querySelector('#articlesGrid');
+const categoriesFilterWrap = document.querySelector('#categories-filter-wrap');
+const categoriesFilterCount = document.querySelector('#categories-filter-count');
+const categoriesFilterList = document.querySelector('#categories-filter-list');
+const categoriesFilterEmpty = document.querySelector('#categories-filter-empty');
 
 const params = new URLSearchParams(window.location.search);
 const countryId = params.get('country_id');
 
 let currentCountry = null;
 let currentPosts = [];
+let currentCategories = [];
+let selectedCategoryIds = new Set();
 
 const IMAGE_PLACEHOLDER = 'https://images.unsplash.com/photo-1526481280695-3c4691f5e66c?auto=format&fit=crop&w=1200&q=80';
 
@@ -37,6 +43,10 @@ function showEmpty() {
   empty.classList.remove('d-none');
 }
 
+function hideEmpty() {
+  empty.classList.add('d-none');
+}
+
 function hideAlerts() {
   message.classList.add('d-none');
   message.textContent = '';
@@ -47,6 +57,78 @@ function setCountryContext(countryName) {
   const resolved = countryName || translate('unknownCountry');
   title.textContent = `${translate('postByCountryTitle')} ${resolved}`;
   breadcrumbCurrent.textContent = resolved;
+}
+
+function getSelectedLanguage() {
+  return localStorage.getItem('selectedLang') || localStorage.getItem('lang') || 'en';
+}
+
+function getLocalizedCategoryName(category, language) {
+  return language === 'bg'
+    ? category?.name_bg || category?.name_en || translate('unknownCategory')
+    : category?.name_en || category?.name_bg || translate('unknownCategory');
+}
+
+function getPostCategory(post) {
+  return Array.isArray(post?.categories) ? post.categories[0] : post?.categories;
+}
+
+function getVisiblePosts() {
+  if (!selectedCategoryIds.size) {
+    return [];
+  }
+
+  return currentPosts.filter((post) => {
+    const category = getPostCategory(post);
+    return category?.id && selectedCategoryIds.has(String(category.id));
+  });
+}
+
+function updateFilterCount() {
+  if (!categoriesFilterCount) {
+    return;
+  }
+
+  categoriesFilterCount.textContent = currentCategories.length ? `${currentCategories.length}` : '';
+}
+
+function renderCategoryFilters(language) {
+  if (!categoriesFilterWrap || !categoriesFilterList || !categoriesFilterEmpty) {
+    return;
+  }
+
+  categoriesFilterList.innerHTML = '';
+  categoriesFilterEmpty.classList.toggle('d-none', currentCategories.length > 0);
+  categoriesFilterWrap.classList.toggle('d-none', currentCategories.length === 0);
+
+  if (!currentCategories.length) {
+    updateFilterCount();
+    return;
+  }
+
+  const fragment = document.createDocumentFragment();
+  currentCategories.forEach((category) => {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'form-check form-check-inline category-filter-check';
+
+    const input = document.createElement('input');
+    input.className = 'form-check-input';
+    input.type = 'checkbox';
+    input.id = `category-filter-${category.id}`;
+    input.value = String(category.id);
+    input.checked = selectedCategoryIds.has(String(category.id));
+
+    const label = document.createElement('label');
+    label.className = 'form-check-label';
+    label.setAttribute('for', input.id);
+    label.textContent = getLocalizedCategoryName(category, language);
+
+    wrapper.append(input, label);
+    fragment.appendChild(wrapper);
+  });
+
+  categoriesFilterList.appendChild(fragment);
+  updateFilterCount();
 }
 
 function createPostCard(post, countryName) {
@@ -70,6 +152,11 @@ function createPostCard(post, countryName) {
   badge.className = 'badge text-bg-light border mb-2 align-self-start';
   badge.textContent = countryName;
 
+  const category = getPostCategory(post);
+  const categoryBadge = document.createElement('span');
+  categoryBadge.className = 'badge text-bg-secondary mb-2 align-self-start';
+  categoryBadge.textContent = category ? getLocalizedCategoryName(category, getSelectedLanguage()) : translate('unknownCategory');
+
   const heading = document.createElement('h2');
   heading.className = 'h5 card-title';
   heading.textContent = post.title || translate('unknownPost');
@@ -79,7 +166,7 @@ function createPostCard(post, countryName) {
   button.href = toPostRoute(post.id);
   button.textContent = translate('readLabel');
 
-  body.append(badge, heading, button);
+  body.append(badge, categoryBadge, heading, button);
   card.append(image, body);
   column.appendChild(card);
 
@@ -94,12 +181,18 @@ function renderPosts(posts, countryName) {
     return;
   }
 
+  hideEmpty();
+
   const fragment = document.createDocumentFragment();
   posts.forEach((post) => {
     fragment.appendChild(createPostCard(post, countryName));
   });
 
   grid.appendChild(fragment);
+}
+
+function renderFilteredPosts(countryName) {
+  renderPosts(getVisiblePosts(), countryName);
 }
 
 async function fetchCountry(supabase, selectedCountryId) {
@@ -119,10 +212,23 @@ async function fetchCountry(supabase, selectedCountryId) {
 async function fetchCountryPosts(supabase, selectedCountryId) {
   const { data, error } = await supabase
     .from('posts')
-    .select('id, title, image_url, country_id, created_at')
+    .select('id, title, image_url, country_id, category_id, created_at, categories:categories!posts_category_id_fkey(id, name_en, name_bg)')
     .eq('is_approved', true)
     .eq('country_id', selectedCountryId)
     .order('created_at', { ascending: false });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data || [];
+}
+
+async function fetchCategories(supabase) {
+  const { data, error } = await supabase
+    .from('categories')
+    .select('id, name_en, name_bg')
+    .order('name_en', { ascending: true });
 
   if (error) {
     throw new Error(error.message);
@@ -149,9 +255,10 @@ async function init() {
   }
 
   try {
-    const [country, posts] = await Promise.all([
+    const [country, posts, categories] = await Promise.all([
       fetchCountry(supabase, countryId),
-      fetchCountryPosts(supabase, countryId)
+      fetchCountryPosts(supabase, countryId),
+      fetchCategories(supabase)
     ]);
 
     hideLoading();
@@ -169,8 +276,11 @@ async function init() {
 
     currentCountry = country;
     currentPosts = posts;
+    currentCategories = categories;
+    selectedCategoryIds = new Set(categories.map((category) => String(category.id)));
     setCountryContext(countryName);
-    renderPosts(posts, countryName);
+    renderCategoryFilters(language);
+    renderFilteredPosts(countryName);
   } catch (error) {
     hideLoading();
     showMessage(error?.message || translate('failedLoadCountryPosts'));
@@ -188,7 +298,29 @@ document.addEventListener('languagechange', () => {
     : currentCountry.name_en || currentCountry.name_bg || translate('unknownCountry');
 
   setCountryContext(countryName);
-  renderPosts(currentPosts, countryName);
+  renderCategoryFilters(language);
+  renderFilteredPosts(countryName);
+});
+
+categoriesFilterList?.addEventListener('change', (event) => {
+  const checkbox = event.target.closest('input[type="checkbox"]');
+  if (!checkbox) {
+    return;
+  }
+
+  const categoryId = String(checkbox.value);
+  if (checkbox.checked) {
+    selectedCategoryIds.add(categoryId);
+  } else {
+    selectedCategoryIds.delete(categoryId);
+  }
+
+  const language = getSelectedLanguage();
+  const countryName = language === 'bg'
+    ? currentCountry?.name_bg || currentCountry?.name_en || translate('unknownCountry')
+    : currentCountry?.name_en || currentCountry?.name_bg || translate('unknownCountry');
+
+  renderFilteredPosts(countryName);
 });
 
 init();

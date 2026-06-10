@@ -20,6 +20,7 @@ const postView = document.querySelector('#post-view');
 const postCoverImage = document.querySelector('#post-cover-image');
 const postTitle = document.querySelector('#post-title');
 const postCountry = document.querySelector('#post-country');
+const postCategory = document.querySelector('#post-category');
 const postAuthor = document.querySelector('#post-author');
 const postDate = document.querySelector('#post-date');
 const postContent = document.querySelector('#post-content');
@@ -183,9 +184,15 @@ function renderPost(post) {
   postTitle.textContent = post.title || translate('unknownPost');
   const language = localStorage.getItem('selectedLang') || localStorage.getItem('lang') || 'en';
   const country = Array.isArray(post?.countries) ? post.countries[0] : post?.countries;
+  const category = Array.isArray(post?.categories) ? post.categories[0] : post?.categories;
   postCountry.textContent = language === 'bg'
     ? country?.name_bg || country?.name_en || translate('unknownCountry')
     : country?.name_en || country?.name_bg || translate('unknownCountry');
+  if (postCategory) {
+    postCategory.textContent = language === 'bg'
+      ? category?.name_bg || category?.name_en || translate('unknownCategory')
+      : category?.name_en || category?.name_bg || translate('unknownCategory');
+  }
   postAuthor.textContent = post?.profiles?.username || translate('unknownAuthor');
   postDate.textContent = formatPublishedDate(post.created_at);
   postContent.innerHTML = toParagraphs(post.content);
@@ -218,7 +225,7 @@ async function loadCurrentUser() {
 async function fetchPostById(postId) {
   const { data, error } = await state.supabase
     .from('posts')
-    .select('id, title, content, image_url, created_at, author_id, country_id, is_approved, profiles!posts_author_id_fkey(username), countries!posts_country_id_fkey(name_en, name_bg)')
+    .select('id, title, content, image_url, created_at, author_id, country_id, category_id, is_approved, profiles!posts_author_id_fkey(username), countries!posts_country_id_fkey(name_en, name_bg), categories!posts_category_id_fkey(name_en, name_bg)')
     .eq('id', postId)
     .maybeSingle();
 

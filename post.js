@@ -4,6 +4,7 @@ import { requireSupabase } from '/src/lib/supabaseClient.js';
 import { Modal } from 'bootstrap';
 import { redirectGuestFromProtectedPage } from '/src/lib/auth.js';
 import { translate } from '/src/lib/i18n.js';
+import { setMetaTags, applyArticleStructuredData } from '/src/lib/seo.js';
 
 mountHeader('#app-header');
 mountFooter('#app-footer');
@@ -20,6 +21,7 @@ const postView = document.querySelector('#post-view');
 const postCoverImage = document.querySelector('#post-cover-image');
 const postTitle = document.querySelector('#post-title');
 const postCountry = document.querySelector('#post-country');
+const postCategory = document.querySelector('#post-category');
 const postAuthor = document.querySelector('#post-author');
 const postDate = document.querySelector('#post-date');
 const postContent = document.querySelector('#post-content');
@@ -163,12 +165,47 @@ function renderPost(post) {
   postTitle.textContent = post.title || translate('unknownPost');
   const language = localStorage.getItem('selectedLang') || localStorage.getItem('lang') || 'en';
   const country = Array.isArray(post?.countries) ? post.countries[0] : post?.countries;
+  const category = Array.isArray(post?.categories) ? post.categories[0] : post?.categories;
   postCountry.textContent = language === 'bg'
     ? country?.name_bg || country?.name_en || translate('unknownCountry')
     : country?.name_en || country?.name_bg || translate('unknownCountry');
+  if (postCategory) {
+    postCategory.textContent = language === 'bg'
+      ? category?.name_bg || category?.name_en || translate('unknownCategory')
+      : category?.name_en || category?.name_bg || translate('unknownCategory');
+  }
   postAuthor.textContent = post?.profiles?.username || translate('unknownAuthor');
   postDate.textContent = formatPublishedDate(post.created_at);
   postContent.innerHTML = toParagraphs(post.content);
+
+  // SEO: set page meta tags and structured data for the article
+  try {
+    const pageUrl = `${location.origin}/post.html?id=${post.id}`;
+    const titleText = post.title || translate('unknownPost');
+    const rawDescription = (post.content || '').trim().split('\n')[0] || '';
+    const description = rawDescription.slice(0, 160);
+    const image = post.image_url || COVER_PLACEHOLDER;
+
+    setMetaTags({
+      title: `${titleText} | Asian Travel Blog`,
+      description,
+      canonical: pageUrl,
+      image,
+      type: 'article'
+    });
+
+    applyArticleStructuredData({
+      title: titleText,
+      description,
+      url: pageUrl,
+      image,
+      authorName: post.profiles?.username,
+      datePublished: post.created_at
+    });
+  } catch (e) {
+    // non-fatal
+    console.warn('SEO setup failed', e);
+  }
 
   postLoading.classList.add('d-none');
   notFound.classList.add('d-none');
@@ -204,7 +241,7 @@ async function loadCurrentUser() {
 async function fetchPostById(postId) {
   const { data, error } = await state.supabase
     .from('posts')
-    .select('id, title, content, image_url, created_at, author_id, country_id, is_approved, profiles!posts_author_id_fkey(username), countries!posts_country_id_fkey(name_en, name_bg)')
+    .select('id, title, content, image_url, created_at, author_id, country_id, category_id, is_approved, profiles!posts_author_id_fkey(username), countries!posts_country_id_fkey(name_en, name_bg), categories!posts_category_id_fkey(name_en, name_bg)')
     .eq('id', postId)
     .single();
 

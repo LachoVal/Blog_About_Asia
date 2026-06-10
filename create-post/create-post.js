@@ -15,6 +15,7 @@ const heading = document.querySelector('main h1');
 const submitButton = form.querySelector('button[type="submit"]');
 const countryGroup = form.querySelector('#post-country-group');
 const countrySelect = form.querySelector('#post-country-id');
+const categorySelect = form.querySelector('#post-category-id');
 
 const editPostId = new URLSearchParams(window.location.search).get('edit');
 const state = {
@@ -92,6 +93,47 @@ async function populateCountryOptions(supabase, selectedCountryId) {
   countryGroup.classList.remove('d-none');
 }
 
+async function populateCategoryOptions(supabase, selectedCategoryId) {
+  if (!categorySelect) {
+    return;
+  }
+
+  const language = localStorage.getItem('selectedLang') || localStorage.getItem('lang') || 'en';
+  const { data, error } = await supabase
+    .from('categories')
+    .select('id, name_en, name_bg')
+    .order('name_en', { ascending: true });
+
+  if (error) {
+    message.className = 'mt-3 mb-0 text-danger';
+    message.textContent = error.message;
+    return;
+  }
+
+  categorySelect.innerHTML = `<option value="">${translate('postCategoryPlaceholder')}</option>`;
+  (data || []).forEach((category) => {
+    const option = document.createElement('option');
+    option.value = String(category.id);
+    option.textContent = language === 'bg'
+      ? category.name_bg || category.name_en || ''
+      : category.name_en || category.name_bg || '';
+    categorySelect.appendChild(option);
+  });
+
+  if (selectedCategoryId !== null && selectedCategoryId !== undefined) {
+    categorySelect.value = String(selectedCategoryId);
+  }
+}
+
+async function initializeCategoryOptions() {
+  const { supabase } = await getAuthenticatedSession();
+  if (!supabase) {
+    return;
+  }
+
+  await populateCategoryOptions(supabase);
+}
+
 async function loadPostForEditing() {
   if (!editPostId) {
     return;
@@ -109,7 +151,7 @@ async function loadPostForEditing() {
 
   const { data, error } = await supabase
     .from('posts')
-    .select('id, title, content, image_url, country_id')
+    .select('id, title, content, image_url, country_id, category_id')
     .eq('id', editPostId)
     .maybeSingle();
 
@@ -130,6 +172,7 @@ async function loadPostForEditing() {
   if (imageUrlInput) {
     imageUrlInput.value = data.image_url || '';
   }
+  await populateCategoryOptions(supabase, data.category_id);
   if (state.currentRole === 'admin') {
     await populateCountryOptions(supabase, data.country_id);
   }
@@ -139,6 +182,9 @@ async function loadPostForEditing() {
 }
 
 loadPostForEditing();
+if (!editPostId) {
+  initializeCategoryOptions();
+}
 
 form.addEventListener('submit', async (event) => {
   event.preventDefault();
@@ -155,8 +201,10 @@ form.addEventListener('submit', async (event) => {
   const content = String(formData.get('content') || '');
   const imageUrlValue = formData.get('image_url');
   const countryIdValue = formData.get('country_id');
+  const categoryIdValue = formData.get('category_id');
   const hasImageInput = form.querySelector('[name="image_url"]') !== null;
   const hasCountryInput = form.querySelector('[name="country_id"]') !== null && !countryGroup?.classList.contains('d-none');
+  const hasCategoryInput = form.querySelector('[name="category_id"]') !== null;
   const image_url = hasImageInput
     ? (typeof imageUrlValue === 'string' && imageUrlValue.trim() ? imageUrlValue.trim() : null)
     : (state.loadedPost?.image_url ?? null);
@@ -165,17 +213,20 @@ form.addEventListener('submit', async (event) => {
   const country_id = hasCountryInput
     ? (Number.isInteger(parsedCountryId) && parsedCountryId > 0 ? parsedCountryId : fallbackCountryId)
     : fallbackCountryId;
+  const category_id = hasCategoryInput
+    ? (typeof categoryIdValue === 'string' && categoryIdValue.trim() ? categoryIdValue.trim() : (state.loadedPost?.category_id ?? null))
+    : (state.loadedPost?.category_id ?? null);
 
   let error;
   if (editPostId) {
     ({ error } = await supabase
       .from('posts')
-      .update({ title, content, image_url, country_id, is_approved: false })
+      .update({ title, content, image_url, country_id, category_id, is_approved: false })
       .eq('id', editPostId));
   } else {
     ({ error } = await supabase
       .from('posts')
-      .insert({ title, content, author_id: session.user.id }));
+      .insert({ title, content, author_id: session.user.id, category_id }));
   }
 
   if (error) {

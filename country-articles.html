@@ -19,6 +19,17 @@
 
       <h1 id="country-articles-title" class="display-6 fw-bold mb-4" data-i18n="countryPosts">Country Posts</h1>
 
+      <section id="categories-filter-wrap" class="card border-0 shadow-sm mb-4 d-none">
+        <div class="card-body">
+          <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+            <h2 class="h5 mb-0" data-i18n="categoriesFilterLabel">Filter by category</h2>
+            <span id="categories-filter-count" class="text-body-secondary small"></span>
+          </div>
+          <div id="categories-filter-list" class="d-flex flex-wrap gap-2"></div>
+          <p id="categories-filter-empty" class="small text-body-secondary mt-3 mb-0 d-none" data-i18n="noCategoriesAvailable">No categories are available for this country.</p>
+        </div>
+      </section>
+
       <div id="articles-loading" class="alert alert-secondary" role="status" data-i18n="loadingCountryPosts">Loading posts...</div>
       <div id="articles-message" class="alert alert-danger d-none" role="alert"></div>
       <div id="articles-empty" class="alert alert-light border d-none" data-i18n="noPostsFoundCountryPage">No posts found for this country.</div>

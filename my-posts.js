@@ -21,6 +21,7 @@ const editorPostId = document.querySelector('#editor-post-id');
 const editorPostTitle = document.querySelector('#editor-post-title');
 const editorPostContent = document.querySelector('#editor-post-content');
 const editorPostCountry = document.querySelector('#editor-post-country');
+const editorPostCategory = document.querySelector('#editor-post-category');
 const editorPostPhoto = document.querySelector('#editor-post-photo');
 const editorPostPhotoBrowse = document.querySelector('#editor-post-photo-browse');
 const editorPostPhotoName = document.querySelector('#editor-post-photo-name');
@@ -32,6 +33,7 @@ const state = {
   currentUser: null,
   posts: [],
   countries: [],
+  categories: [],
   editorMode: 'create',
   editorModal: null
 };
@@ -71,6 +73,7 @@ function resetEditorForm() {
   editorPostTitle.value = '';
   editorPostContent.value = '';
   editorPostCountry.value = '';
+  editorPostCategory.value = '';
   editorPostPhoto.value = '';
   clearEditorMessage();
 }
@@ -93,7 +96,7 @@ async function openEditModal(postId) {
   setEditorMessage(translate('loadingPostForEditing'), 'secondary');
   const { data, error } = await state.supabase
     .from('posts')
-    .select('id, title, content, country_id')
+    .select('id, title, content, country_id, category_id')
     .eq('id', postId)
     .eq('author_id', state.currentUser.id)
     .maybeSingle();
@@ -107,6 +110,7 @@ async function openEditModal(postId) {
   editorPostTitle.value = data.title || '';
   editorPostContent.value = data.content || '';
   editorPostCountry.value = data.country_id ? String(data.country_id) : '';
+  editorPostCategory.value = data.category_id ? String(data.category_id) : '';
   clearEditorMessage();
   updateEditorPostPhotoLabel();
   state.editorModal.show();
@@ -127,6 +131,24 @@ function populateCountryOptions(countries) {
       ? country.name_bg || country.name_en || ''
       : country.name_en || country.name_bg || '';
     editorPostCountry.appendChild(option);
+  });
+}
+
+function populateCategoryOptions(categories) {
+  if (!editorPostCategory) {
+    return;
+  }
+
+  const language = localStorage.getItem('selectedLang') || localStorage.getItem('lang') || 'en';
+  editorPostCategory.innerHTML = `<option value="">${translate('postCategoryPlaceholder')}</option>`;
+
+  categories.forEach((category) => {
+    const option = document.createElement('option');
+    option.value = category.id;
+    option.textContent = language === 'bg'
+      ? category.name_bg || category.name_en || ''
+      : category.name_en || category.name_bg || '';
+    editorPostCategory.appendChild(option);
   });
 }
 
@@ -254,6 +276,25 @@ async function loadCountries() {
   populateCountryOptions(state.countries);
 }
 
+async function loadCategories() {
+  const language = localStorage.getItem('selectedLang') || localStorage.getItem('lang') || 'en';
+  const { data, error } = await state.supabase
+    .from('categories')
+    .select('id, name_en, name_bg')
+    .order('name_en', { ascending: true });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  state.categories = data || [];
+  state.categories = state.categories.map((category) => ({
+    ...category,
+    name: language === 'bg' ? category.name_bg || category.name_en || '' : category.name_en || category.name_bg || ''
+  }));
+  populateCategoryOptions(state.categories);
+}
+
 function removeRowFromDom(postId) {
   const row = tableBody.querySelector(`tr[data-post-id="${postId}"]`);
   if (row) {
@@ -288,6 +329,7 @@ async function handleEditorSubmit(event) {
   const title = editorPostTitle.value.trim();
   const content = editorPostContent.value.trim();
   const selectedCountryId = editorPostCountry.value;
+  const selectedCategoryId = editorPostCategory.value;
   const selectedFile = editorPostPhoto.files?.[0] || null;
 
   if (!title || !content) {
@@ -297,6 +339,11 @@ async function handleEditorSubmit(event) {
 
   if (!selectedCountryId) {
     setEditorMessage(translate('selectCountryLabel'), 'danger');
+    return;
+  }
+
+  if (!selectedCategoryId) {
+    setEditorMessage(translate('selectCategoryLabel'), 'danger');
     return;
   }
 
@@ -326,6 +373,7 @@ async function handleEditorSubmit(event) {
       title,
       content,
       country_id: selectedCountryId,
+      category_id: selectedCategoryId,
       is_approved: false
     };
 
@@ -356,6 +404,7 @@ async function handleEditorSubmit(event) {
     title,
     content,
     country_id: selectedCountryId,
+    category_id: selectedCategoryId,
     author_id: state.currentUser.id
   };
 
@@ -443,10 +492,14 @@ async function init() {
     if (state.countries.length) {
       populateCountryOptions(state.countries);
     }
+
+    if (state.categories.length) {
+      populateCategoryOptions(state.categories);
+    }
   });
 
   try {
-    await loadCountries();
+    await Promise.all([loadCountries(), loadCategories()]);
     await fetchMyPosts();
   } catch (error) {
     showMessage(error instanceof Error ? error.message : 'Unable to load posts.', 'danger');
